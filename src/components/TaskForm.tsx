@@ -57,6 +57,7 @@ export default function TaskForm({ onSubmit }: TaskFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       description: "",
+      deadline: new Date(),
       importance: "medium",
       estimatedEffort: "1 hour",
     },
@@ -65,6 +66,7 @@ export default function TaskForm({ onSubmit }: TaskFormProps) {
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
     onSubmit(values);
     form.reset();
+    form.setValue("deadline", new Date());
   };
 
   return (

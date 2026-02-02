@@ -54,3 +54,37 @@ export type UserProfile = {
   salary?: number;
   salaryPassword?: string;
 };
+
+export const importanceLevels = ["high", "medium", "low"] as const;
+export type Importance = (typeof importanceLevels)[number];
+
+export type Task = {
+  id: string;
+  description: string;
+  deadline: Date;
+  importance: Importance;
+  estimatedEffort: string;
+  completed: boolean;
+  startTime?: string;
+  endTime?: string;
+};
+
+// For AI flow
+export type TaskInput = {
+  tasks: {
+    description: string;
+    deadline: string;
+    importance: Importance;
+    estimatedEffort: string;
+  }[];
+};
+
+export type TaskOutput = {
+  prioritizedTasks: {
+    description: string;
+    deadline: string;
+    importance: Importance;
+    estimatedEffort: string;
+  }[];
+  reasoning: string;
+};

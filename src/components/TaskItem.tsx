@@ -26,7 +26,7 @@ const importanceVariantMap = {
 
 export default function TaskItem({ task, onToggleComplete, onDelete, onUpdate }: TaskItemProps) {
   return (
-    <Card className={cn("transition-all hover:shadow-md", task.completed && "bg-muted/50")}>
+    <Card className={cn("transition-all hover:shadow-md animate-in fade-in-0 zoom-in-95", task.completed && "bg-muted/50")}>
       <CardContent className="p-4 flex flex-col md:flex-row items-start gap-4">
         <div className="flex items-center space-x-4 flex-1">
           <Checkbox
