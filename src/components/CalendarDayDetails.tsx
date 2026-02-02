@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { Expense, Task, UserProfile } from '@/app/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -23,6 +23,10 @@ export default function CalendarDayDetails({ selectedDate, expenses, tasks, user
   const [aiSummary, setAiSummary] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const currencySymbol = getCurrencySymbol(user.currency);
+
+  const totalExpenses = useMemo(() => {
+    return expenses.reduce((total, expense) => total + expense.amount, 0);
+  }, [expenses]);
 
   const handleGenerateSummary = async () => {
     setIsGenerating(true);
@@ -97,7 +101,14 @@ export default function CalendarDayDetails({ selectedDate, expenses, tasks, user
 
                 {/* Expenses Section */}
                 <div>
-                    <h3 className="text-lg font-semibold flex items-center gap-2 mb-2"><Wallet/> Expenses ({expenses.length})</h3>
+                    <h3 className="text-lg font-semibold flex items-center justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                            <Wallet/> Expenses ({expenses.length})
+                        </div>
+                        {totalExpenses > 0 && (
+                            <span className="font-mono text-base">{currencySymbol}{totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        )}
+                    </h3>
                     {expenses.length > 0 ? (
                         <ul className="space-y-3">
                             {expenses.map(expense => (
@@ -106,7 +117,7 @@ export default function CalendarDayDetails({ selectedDate, expenses, tasks, user
                                         <p className="font-medium">{expense.title}</p>
                                         <Badge variant="outline">{expense.category}</Badge>
                                     </div>
-                                    <p className="font-mono font-medium">{currencySymbol}{expense.amount.toLocaleString()}</p>
+                                    <p className="font-mono font-medium">{currencySymbol}{expense.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                 </li>
                             ))}
                         </ul>

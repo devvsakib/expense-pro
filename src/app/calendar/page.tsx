@@ -82,22 +82,13 @@ export default function CalendarPage() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100%-120px)]">
-                <Card className="lg:col-span-2 p-0">
+                <Card className="lg:col-span-2 flex justify-center items-start pt-6">
                     <Calendar
                         mode="single"
                         selected={selectedDate}
                         onSelect={setSelectedDate}
                         month={currentMonth}
                         onMonthChange={setCurrentMonth}
-                        className="p-4"
-                        classNames={{
-                            months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                            month: "space-y-4 w-full",
-                            table: "w-full border-collapse space-y-1",
-                            head_row: "flex w-full mt-2",
-                            row: "flex w-full mt-2",
-                            day: "h-12 w-full text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
-                        }}
                         modifiers={eventModifier}
                         modifiersClassNames={{
                             'with-event': 'day-with-event',
