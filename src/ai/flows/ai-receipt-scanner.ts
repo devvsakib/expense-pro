@@ -57,28 +57,7 @@ const scanReceiptFlow = ai.defineFlow(
     outputSchema: ReceiptScanOutputSchema,
   },
   async input => {
-    // To simulate the AI response without making a real API call, we can return a mock object.
-    // This is useful for development and testing to avoid hitting API rate limits.
-    console.log("Simulating AI receipt scan. Using mock data.");
-
-    // Uncomment the following lines to use the real AI
-    // const {output} = await scanReceiptPrompt(input);
-    // return output!;
-
-    // Mock response:
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-    const mockOutput: ReceiptScanOutput = {
-        title: "Mock Groceries",
-        amount: 42.75,
-        date: new Date().toISOString().split('T')[0], // Today's date in YYYY-MM-DD
-        category: "Food"
-    };
-
-    // Ensure the mock category is valid
-    if (!input.categories.includes(mockOutput.category)) {
-        mockOutput.category = input.categories[0] || 'Other';
-    }
-
-    return mockOutput;
+    const {output} = await scanReceiptPrompt(input);
+    return output!;
   }
 );
