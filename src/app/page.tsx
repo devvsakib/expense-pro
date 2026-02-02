@@ -257,31 +257,41 @@ export default function Home() {
         </DialogContent>
       </Dialog>
       
-      <main className="flex-1 overflow-hidden">
-        <div className="container mx-auto px-4 h-full">
-            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8 h-full">
-                {/* Main Content */}
-                <div className="lg:col-span-2 xl:col-span-3 space-y-8 overflow-y-auto py-8">
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                        <h1 className="text-3xl md:text-4xl font-bold mb-1">
-                            Welcome back, {user.name}!
-                        </h1>
-                        <p className="text-muted-foreground">
-                            Here's your financial overview.
-                        </p>
-                        </div>
-                        <div className="flex w-full md:w-auto shrink-0 gap-2">
-                            <Button onClick={handleGenerateReport} variant="outline" className="w-full sm:w-auto">
-                                <Sparkles className="mr-2 h-4 w-4" /> AI Report
-                            </Button>
-                            <Button onClick={() => handleOpenForm()} className="whitespace-nowrap w-full sm:w-auto">
-                                <PlusCircle className="mr-2 h-4 w-4" /> Add Expense
-                            </Button>
-                        </div>
-                    </div>
+      <main className="flex-1">
+        <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 py-8">
+                <div>
+                <h1 className="text-3xl md:text-4xl font-bold mb-1">
+                    Welcome back, {user.name}!
+                </h1>
+                <p className="text-muted-foreground">
+                    Here's your financial overview.
+                </p>
+                </div>
+                <div className="flex w-full md:w-auto shrink-0 gap-2">
+                    <Button onClick={handleGenerateReport} variant="outline" className="w-full sm:w-auto">
+                        <Sparkles className="mr-2 h-4 w-4" /> AI Report
+                    </Button>
+                    <Button onClick={() => handleOpenForm()} className="whitespace-nowrap w-full sm:w-auto">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Expense
+                    </Button>
+                </div>
+            </div>
 
-                    <div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {/* Sidebar - Appears on top on mobile, on the right on desktop */}
+                <div className="lg:col-span-1 xl:col-span-1 lg:order-last">
+                    <div className="lg:sticky lg:top-24 space-y-6">
+                        <ExpenseSummary user={user} expenses={filteredExpenses} />
+                        <CategoryBudgets user={user} expenses={filteredExpenses} />
+                        <SpendingChart expenses={filteredExpenses} currency={user.currency} />
+                        <CategoryPieChart expenses={filteredExpenses} currency={user.currency} customCategories={user.customCategories || []} />
+                    </div>
+                </div>
+                
+                {/* Main Content */}
+                <div className="lg:col-span-2 xl:col-span-3">
+                    <div className="space-y-8">
                         <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                             <h2 className="text-2xl font-bold tracking-tight">
                             Your Expenses
@@ -339,13 +349,6 @@ export default function Home() {
                     </div>
                 </div>
 
-                {/* Sidebar */}
-                <div className="lg:col-span-1 xl:col-span-1 space-y-6 overflow-y-auto py-8">
-                    <ExpenseSummary user={user} expenses={filteredExpenses} />
-                    <CategoryBudgets user={user} expenses={filteredExpenses} />
-                    <SpendingChart expenses={filteredExpenses} currency={user.currency} />
-                    <CategoryPieChart expenses={filteredExpenses} currency={user.currency} customCategories={user.customCategories || []} />
-                </div>
             </div>
         </div>
       </main>
