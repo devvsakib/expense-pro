@@ -169,7 +169,7 @@ export default function SavingsPage() {
 
       setSavingsGoals(goals => goals.map(g => 
         g.id === editingGoal.id 
-        ? { ...g, currentAmount: Math.min(g.amount, g.currentAmount + values.amount) } // Cap at goal amount
+        ? { ...g, currentAmount: Math.min(g.amount, (g.currentAmount || 0) + values.amount) } // Cap at goal amount
         : g
     ));
     
@@ -225,7 +225,7 @@ export default function SavingsPage() {
         <div className="space-y-4">
             {savingsGoals.length > 0 ? (
                 savingsGoals.map(goal => {
-                    const progress = (goal.currentAmount / goal.amount) * 100;
+                    const progress = goal.amount ? ((goal.currentAmount || 0) / goal.amount) * 100 : 0;
                     return (
                     <Card key={goal.id}>
                         <CardHeader>
@@ -233,7 +233,7 @@ export default function SavingsPage() {
                                 <div>
                                     <CardTitle>{goal.name}</CardTitle>
                                     <CardDescription>
-                                        Goal: {currencySymbol}{goal.amount.toLocaleString()} &bull; Created on {format(new Date(goal.createdAt), 'MMM d, yyyy')}
+                                        Goal: {currencySymbol}{(goal.amount || 0).toLocaleString()} &bull; Created on {format(new Date(goal.createdAt), 'MMM d, yyyy')}
                                     </CardDescription>
                                 </div>
                                 <div className="flex gap-2">
@@ -249,7 +249,7 @@ export default function SavingsPage() {
                         <CardContent>
                             <div className="flex justify-between items-center mb-2 text-sm">
                                 <span className="text-muted-foreground">Progress ({progress.toFixed(0)}%)</span>
-                                <span className="font-medium">{currencySymbol}{goal.currentAmount.toLocaleString()} / {currencySymbol}{goal.amount.toLocaleString()}</span>
+                                <span className="font-medium">{currencySymbol}{(goal.currentAmount || 0).toLocaleString()} / {currencySymbol}{(goal.amount || 0).toLocaleString()}</span>
                             </div>
                             <Progress value={progress} className="h-2" />
                             <div className="mt-4">
