@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Sparkles, ListTodo, Loader2, CalendarCheck, ArrowRight } from 'lucide-react';
+import { Sparkles, ListTodo, Loader2, CalendarCheck, ArrowRight, ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header';
 import TaskForm from '@/components/TaskForm';
 import TaskList from '@/components/TaskList';
@@ -37,6 +37,7 @@ import ProgressTracker from '@/components/ProgressTracker';
 import DailySummary from '@/components/DailySummary';
 import { prioritizeTasks } from '@/ai/flows/ai-prioritize-tasks';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export default function PlannerPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -179,6 +180,10 @@ export default function PlannerPage() {
       <main className="flex-1">
         <div className="container mx-auto py-8 px-4">
           <div className="max-w-4xl mx-auto">
+            <Link href="/" className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
+            </Link>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
               AI Task Planner
             </h1>
