@@ -217,6 +217,8 @@ export default function ExpenseForm({
                 setAiSuggestedCategory(result.category);
             }
 
+            form.setValue('notes', result.notes || '');
+
             toast({
                 title: "Receipt Scanned!",
                 description: "Your form has been pre-filled with the receipt details."
