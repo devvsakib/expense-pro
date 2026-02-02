@@ -91,15 +91,6 @@ export default function ExpenseForm({
   const currencySymbol = getCurrencySymbol(user.currency);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      amount: "" as any,
-      date: new Date(),
-      category: "",
-      status: "completed",
-      recurrence: "one-time",
-      notes: "",
-    },
   });
 
   useEffect(() => {
@@ -107,12 +98,14 @@ export default function ExpenseForm({
       if (expense) {
         form.reset({
           ...expense,
+          amount: expense.amount || undefined,
           notes: expense.notes || "",
+          category: expense.category || "",
         });
       } else {
         form.reset({
           title: "",
-          amount: "" as any,
+          amount: undefined,
           date: new Date(),
           category: "",
           status: "completed",
@@ -170,7 +163,7 @@ export default function ExpenseForm({
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
                           {currencySymbol}
                         </span>
-                        <Input type="number" placeholder="0.00" className="pl-8" {...field} />
+                        <Input type="number" placeholder="0.00" className="pl-8" {...field} value={field.value ?? ""} />
                       </div>
                     </FormControl>
                     <FormMessage />
