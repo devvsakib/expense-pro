@@ -62,6 +62,8 @@ User's name: {{user.name}}
 Monthly Budget: {{user.monthlyBudget}} {{user.currency}}
 Savings Goal: Save {{goal.amount}} {{user.currency}} for "{{goal.name}}".
 
+Crucially, consider the user's monthly budget of **{{user.monthlyBudget}} {{user.currency}}** when creating the savings plan. The suggestions must be realistic within this budget.
+
 Here are the user's recent expenses for the selected period:
 {{#if expenses}}
   {{#each expenses}}

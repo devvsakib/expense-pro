@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { SavingsGoal, UserProfile, Expense } from '@/app/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Eye, PiggyBank } from 'lucide-react';
+import { PlusCircle, Loader2, Eye, PiggyBank, FilePenLine, Trash2 } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   Dialog,
@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { generateSavingsPlan } from '@/ai/flows/ai-savings-coach';
 import { getCurrencySymbol } from '@/lib/utils';
@@ -40,6 +41,11 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+const contributionSchema = z.object({
+    amount: z.coerce.number().positive("Please enter a positive amount."),
+});
+type ContributionValues = z.infer<typeof contributionSchema>;
+
 export default function SavingsPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -49,6 +55,7 @@ export default function SavingsPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isViewPlanDialogOpen, setViewPlanDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<string>('');
+  const [editingGoal, setEditingGoal] = useState<SavingsGoal | null>(null);
   const { toast } = useToast();
 
   // Load data from localStorage
@@ -86,6 +93,13 @@ export default function SavingsPage() {
       goalAmount: undefined,
     },
   });
+  
+  const contributionForm = useForm<ContributionValues>({
+      resolver: zodResolver(contributionSchema),
+      defaultValues: {
+          amount: undefined,
+      }
+  });
 
   const currencySymbol = user ? getCurrencySymbol(user.currency) : '$';
 
@@ -117,6 +131,7 @@ export default function SavingsPage() {
         id: crypto.randomUUID(),
         name: values.goalName,
         amount: values.goalAmount,
+        currentAmount: 0,
         plan: result.plan,
         createdAt: new Date().toISOString(),
       };
@@ -146,8 +161,26 @@ export default function SavingsPage() {
     toast({
         title: "Goal Deleted",
         description: "The savings goal has been removed.",
-        variant: "destructive",
     })
+  }
+
+  const handleAddContribution = (values: ContributionValues) => {
+      if (!editingGoal) return;
+
+      setSavingsGoals(goals => goals.map(g => 
+        g.id === editingGoal.id 
+        ? { ...g, currentAmount: Math.min(g.amount, g.currentAmount + values.amount) } // Cap at goal amount
+        : g
+    ));
+    
+    toast({ title: "Contribution Added!", description: `You've added ${currencySymbol}${values.amount} to your goal.` });
+    setEditingGoal(null);
+    contributionForm.reset();
+  }
+  
+  const handleOpenContribution = (goal: SavingsGoal) => {
+      setEditingGoal(goal);
+      contributionForm.reset();
   }
 
   if (!isClient) {
@@ -155,7 +188,6 @@ export default function SavingsPage() {
   }
   
   if (!user) {
-      // Could redirect to onboarding or show a message
       return (
         <div className="flex flex-col min-h-screen bg-background">
             <Header />
@@ -192,7 +224,9 @@ export default function SavingsPage() {
 
         <div className="space-y-4">
             {savingsGoals.length > 0 ? (
-                savingsGoals.map(goal => (
+                savingsGoals.map(goal => {
+                    const progress = (goal.currentAmount / goal.amount) * 100;
+                    return (
                     <Card key={goal.id}>
                         <CardHeader>
                             <div className="flex justify-between items-start">
@@ -206,14 +240,26 @@ export default function SavingsPage() {
                                     <Button variant="outline" size="sm" onClick={() => handleViewPlan(goal.plan)}>
                                         <Eye className="mr-2 h-4 w-4" /> View Plan
                                     </Button>
-                                    <Button variant="destructive" size="sm" onClick={() => handleDeleteGoal(goal.id)}>
-                                        Delete
+                                    <Button variant="destructive" size="icon" onClick={() => handleDeleteGoal(goal.id)}>
+                                        <Trash2 className="h-4 w-4"/>
                                     </Button>
                                 </div>
                             </div>
                         </CardHeader>
+                        <CardContent>
+                            <div className="flex justify-between items-center mb-2 text-sm">
+                                <span className="text-muted-foreground">Progress ({progress.toFixed(0)}%)</span>
+                                <span className="font-medium">{currencySymbol}{goal.currentAmount.toLocaleString()} / {currencySymbol}{goal.amount.toLocaleString()}</span>
+                            </div>
+                            <Progress value={progress} className="h-2" />
+                            <div className="mt-4">
+                                <Button variant="secondary" size="sm" onClick={() => handleOpenContribution(goal)}>
+                                    <FilePenLine className="mr-2 h-4 w-4" /> Add Contribution
+                                </Button>
+                            </div>
+                        </CardContent>
                     </Card>
-                ))
+                )})
             ) : (
                 <Card className="text-center py-16 border-dashed border-2">
                     <CardContent className="flex flex-col items-center justify-center">
@@ -301,9 +347,52 @@ export default function SavingsPage() {
                 <div className="py-4 max-h-[60vh] overflow-y-auto">
                     <div
                     className="text-sm whitespace-pre-wrap"
-                    dangerouslySetInnerHTML={{ __html: selectedPlan.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />') }}
+                    dangerouslySetInnerHTML={{ __html: selectedPlan.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/^- /gm, '• ').replace(/\n/g, '<br />') }}
                     />
                 </div>
+            </DialogContent>
+        </Dialog>
+
+        {/* Add Contribution Dialog */}
+        <Dialog open={!!editingGoal} onOpenChange={(isOpen) => !isOpen && setEditingGoal(null)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add Contribution to "{editingGoal?.name}"</DialogTitle>
+                    <DialogDescription>
+                        How much have you saved towards this goal?
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...contributionForm}>
+                    <form onSubmit={contributionForm.handleSubmit(handleAddContribution)} className="space-y-4 pt-4">
+                        <FormField
+                            control={contributionForm.control}
+                            name="amount"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Contribution Amount</FormLabel>
+                                <FormControl>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+                                    {currencySymbol}
+                                    </span>
+                                    <Input
+                                        type="number"
+                                        placeholder="e.g., 50"
+                                        className="pl-8"
+                                        {...field}
+                                        value={field.value ?? ""}
+                                    />
+                                </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="submit">Add Contribution</Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
             </DialogContent>
         </Dialog>
       </main>
