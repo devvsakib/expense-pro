@@ -61,6 +61,8 @@ export type UserProfile = {
   customCategories?: CustomCategory[];
   categoryBudgets?: CategoryBudget[];
   useMockAI?: boolean;
+  defaultStatus?: ExpenseStatus;
+  defaultRecurrence?: Recurrence;
 };
 
 export const importanceLevels = ["high", "medium", "low"] as const;

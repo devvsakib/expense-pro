@@ -79,12 +79,20 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         salary: values.salary || undefined,
         salaryPassword: values.salaryPassword || undefined,
         customCategories: [],
+        defaultStatus: 'completed',
+        defaultRecurrence: 'one-time',
     } as UserProfile;
     onComplete(finalProfile);
   }
 
   const handleSkip = () => {
-    onComplete({ ...profileData, customCategories: [] } as UserProfile);
+    const finalProfile: UserProfile = {
+      ...profileData,
+      customCategories: [],
+      defaultStatus: 'completed',
+      defaultRecurrence: 'one-time',
+    } as UserProfile;
+    onComplete(finalProfile);
   };
   
   const variants = {

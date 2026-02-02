@@ -18,11 +18,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { UserProfile, Currency, CustomCategory, Expense, CategoryBudget } from '@/app/types';
-import { currencyOptions, expenseCategories } from '@/app/types';
+import type { UserProfile, Currency, CustomCategory, Expense, CategoryBudget, ExpenseStatus, Recurrence } from '@/app/types';
+import { currencyOptions, expenseCategories, expenseStatuses, recurrenceOptions } from '@/app/types';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download, Target, Bot } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download, Target, Bot, Settings as SettingsIcon } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   AlertDialog,
@@ -62,6 +62,8 @@ const profileFormSchema = z.object({
         message: "Password must be at least 4 characters.",
     }),
   useMockAI: z.boolean().optional(),
+  defaultStatus: z.enum(expenseStatuses).optional(),
+  defaultRecurrence: z.enum(recurrenceOptions).optional(),
 }).refine(data => (data.salary && data.salary > 0) ? !!data.salaryPassword : true, {
     message: "A password is required if you set a salary.",
     path: ["salaryPassword"],
@@ -123,6 +125,8 @@ export default function SettingsPage() {
               salary: parsedUser.salary || '',
               salaryPassword: parsedUser.salaryPassword || '',
               useMockAI: parsedUser.useMockAI || false,
+              defaultStatus: parsedUser.defaultStatus || 'completed',
+              defaultRecurrence: parsedUser.defaultRecurrence || 'one-time',
           });
         }
         const storedExpenses = localStorage.getItem('expense-tracker-expenses');
@@ -433,10 +437,70 @@ export default function SettingsPage() {
                           )}
                         />
                     </div>
-                    <Button type="submit">Save Changes</Button>
+                    <Button type="submit">Save Profile</Button>
                   </form>
                 </Form>
               </CardContent>
+            </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle>Default Expense Settings</CardTitle>
+                    <CardDescription>Set default values for new expenses to speed up data entry.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Form {...profileForm}>
+                        <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField
+                                    control={profileForm.control}
+                                    name="defaultStatus"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Default Status</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select a default status" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {expenseStatuses.map((status) => (
+                                                        <SelectItem key={status} value={status} className="capitalize">{status}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={profileForm.control}
+                                    name="defaultRecurrence"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Default Recurrence</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder="Select a default recurrence" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {recurrenceOptions.map((option) => (
+                                                        <SelectItem key={option} value={option} className="capitalize">{option.replace('-', ' ')}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                            <Button type="submit">Save Defaults</Button>
+                        </form>
+                    </Form>
+                </CardContent>
             </Card>
 
              <Card>

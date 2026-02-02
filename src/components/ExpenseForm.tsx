@@ -119,15 +119,15 @@ export default function ExpenseForm({
           amount: undefined,
           date: new Date(),
           category: "",
-          status: "completed",
-          recurrence: "one-time",
+          status: user.defaultStatus || "completed",
+          recurrence: user.defaultRecurrence || "one-time",
           notes: "",
         });
       }
       setAiSuggestedCategory(null);
       setAiCategoryError(null);
     }
-  }, [expense, form, isOpen]);
+  }, [expense, form, isOpen, user]);
 
   const titleValue = form.watch("title");
   const categoryValue = form.watch("category");
@@ -427,7 +427,7 @@ export default function ExpenseForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a status" />
@@ -451,7 +451,7 @@ export default function ExpenseForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Recurrence</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select recurrence" />
