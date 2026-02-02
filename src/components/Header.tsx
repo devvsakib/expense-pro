@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Settings, LayoutGrid, Wallet, PiggyBank } from "lucide-react";
 import { CompassIcon } from "./icons";
