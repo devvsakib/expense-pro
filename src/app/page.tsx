@@ -228,7 +228,7 @@ export default function Home() {
                                 <LayoutDashboard className="mr-2 h-4 w-4" /> View Summary
                             </Button>
                         </SheetTrigger>
-                        <SheetContent className="w-[90vw] max-w-sm overflow-y-auto p-0">
+                        <SheetContent className="max-w-sm overflow-y-auto p-0">
                             <div className="p-6">{sidebarContent}</div>
                         </SheetContent>
                     </Sheet>
