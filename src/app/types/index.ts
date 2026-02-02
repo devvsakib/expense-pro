@@ -12,3 +12,22 @@ export type Task = {
 export type Importance = 'low' | 'medium' | 'high';
 
 export const importanceLevels: Importance[] = ['low', 'medium', 'high'];
+
+export const expenseCategories = [
+  "Food",
+  "Transport",
+  "Shopping",
+  "Bills",
+  "Entertainment",
+  "Other",
+] as const;
+
+export type ExpenseCategory = (typeof expenseCategories)[number];
+
+export type Expense = {
+  id: string;
+  description: string;
+  amount: number;
+  category: ExpenseCategory;
+  date: Date;
+};

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import type { Task } from "@/app/types";
+import type { Task, Expense, ExpenseCategory } from "@/app/types";
 import { prioritizeTasks } from "@/ai/flows/ai-prioritize-tasks";
 import type { TaskInput } from "@/ai/flows/ai-prioritize-tasks";
 import { format } from "date-fns";
@@ -10,17 +10,23 @@ import Header from "@/components/Header";
 import TaskForm from "@/components/TaskForm";
 import TaskList from "@/components/TaskList";
 import ProgressTracker from "@/components/ProgressTracker";
+import ExpenseForm from "@/components/ExpenseForm";
+import ExpenseList from "@/components/ExpenseList";
+import ExpenseSummary from "@/components/ExpenseSummary";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Bot, Loader2, Lightbulb } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function Home() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isAiLoading, startAiTransition] = useTransition();
   const [aiReasoning, setAiReasoning] = useState<string | null>(null);
 
+  // Load state from localStorage
   useEffect(() => {
     setIsClient(true);
     try {
@@ -32,11 +38,22 @@ export default function Home() {
         }));
         setTasks(parsedTasks);
       }
+      const storedExpenses = localStorage.getItem("day-compass-expenses");
+      if (storedExpenses) {
+        const parsedExpenses = JSON.parse(storedExpenses).map(
+          (expense: any) => ({
+            ...expense,
+            date: new Date(expense.date),
+          })
+        );
+        setExpenses(parsedExpenses);
+      }
     } catch (error) {
-      console.error("Failed to load tasks from localStorage", error);
+      console.error("Failed to load data from localStorage", error);
     }
   }, []);
 
+  // Save tasks to localStorage
   useEffect(() => {
     if (isClient) {
       try {
@@ -47,6 +64,18 @@ export default function Home() {
     }
   }, [tasks, isClient]);
 
+  // Save expenses to localStorage
+  useEffect(() => {
+    if (isClient) {
+      try {
+        localStorage.setItem("day-compass-expenses", JSON.stringify(expenses));
+      } catch (error) {
+        console.error("Failed to save expenses to localStorage", error);
+      }
+    }
+  }, [expenses, isClient]);
+
+  // Task handlers
   const handleAddTask = (formValues: {
     description: string;
     deadline: Date;
@@ -73,7 +102,7 @@ export default function Home() {
   const handleDeleteTask = (id: string) => {
     setTasks(tasks.filter((task) => task.id !== id));
   };
-  
+
   const handleUpdateTask = (id: string, updates: Partial<Task>) => {
     setTasks(
       tasks.map((task) => (task.id === id ? { ...task, ...updates } : task))
@@ -81,15 +110,15 @@ export default function Home() {
   };
 
   const handlePrioritize = () => {
-    if (tasks.filter(t => !t.completed).length < 2) {
+    if (tasks.filter((t) => !t.completed).length < 2) {
       setAiReasoning("You need at least two incomplete tasks to prioritize.");
       return;
     }
 
     startAiTransition(async () => {
       setAiReasoning(null);
-      const uncompletedTasks = tasks.filter(t => !t.completed);
-      const completedTasks = tasks.filter(t => t.completed);
+      const uncompletedTasks = tasks.filter((t) => !t.completed);
+      const completedTasks = tasks.filter((t) => t.completed);
 
       const aiInput: TaskInput = {
         tasks: uncompletedTasks.map((task) => ({
@@ -100,57 +129,82 @@ export default function Home() {
 
       try {
         const result = await prioritizeTasks(aiInput);
-        
-        const originalTaskMap = new Map(uncompletedTasks.map(t => [t.id, t]));
-        
-        const prioritizedUncompletedTasks = result.prioritizedTasks.map(
-          (aiTask) => {
-            // Find task by description, assuming descriptions are unique for this operation
-            const foundTask = uncompletedTasks.find(t => t.description === aiTask.description);
-            return foundTask;
-          }
-        ).filter(Boolean) as Task[];
-        
-        const allFoundIds = new Set(prioritizedUncompletedTasks.map(t => t.id));
-        const missingTasks = uncompletedTasks.filter(t => !allFoundIds.has(t.id));
-        
-        if (missingTasks.length > 0) {
-            console.error("Mismatch in prioritized tasks count.");
-            setAiReasoning("AI prioritization resulted in a task mismatch. Re-displaying original order.");
-            setTasks([...uncompletedTasks, ...completedTasks]);
-        } else {
-            setTasks([...prioritizedUncompletedTasks, ...completedTasks]);
-            setAiReasoning(result.reasoning);
-        }
 
+        const prioritizedUncompletedTasks = result.prioritizedTasks
+          .map((aiTask) => {
+            // Find task by description, assuming descriptions are unique for this operation
+            const foundTask = uncompletedTasks.find(
+              (t) => t.description === aiTask.description
+            );
+            return foundTask;
+          })
+          .filter(Boolean) as Task[];
+
+        const allFoundIds = new Set(
+          prioritizedUncompletedTasks.map((t) => t.id)
+        );
+        const missingTasks = uncompletedTasks.filter(
+          (t) => !allFoundIds.has(t.id)
+        );
+
+        if (missingTasks.length > 0) {
+          console.error("Mismatch in prioritized tasks count.");
+          setAiReasoning(
+            "AI prioritization resulted in a task mismatch. Re-displaying original order."
+          );
+          setTasks([...uncompletedTasks, ...completedTasks]);
+        } else {
+          setTasks([...prioritizedUncompletedTasks, ...completedTasks]);
+          setAiReasoning(result.reasoning);
+        }
       } catch (error) {
         console.error("AI prioritization failed:", error);
-        setAiReasoning("Sorry, the AI prioritization failed. Please try again.");
+        setAiReasoning(
+          "Sorry, the AI prioritization failed. Please try again."
+        );
       }
     });
+  };
+
+  // Expense handlers
+  const handleAddExpense = (formValues: {
+    description: string;
+    amount: number;
+    category: ExpenseCategory;
+    date: Date;
+  }) => {
+    const newExpense: Expense = {
+      id: crypto.randomUUID(),
+      ...formValues,
+    };
+    setExpenses((prev) => [...prev, newExpense]);
+  };
+
+  const handleDeleteExpense = (id: string) => {
+    setExpenses(expenses.filter((expense) => expense.id !== id));
   };
 
   if (!isClient) {
     return (
       <div className="flex flex-col min-h-screen">
         <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-           <div className="container flex h-16 items-center">
-             <Skeleton className="h-6 w-36" />
-             <div className="flex flex-1 items-center justify-end space-x-2">
-                <Skeleton className="h-8 w-24" />
-                <Skeleton className="h-8 w-24" />
-             </div>
-           </div>
+          <div className="container flex h-16 items-center">
+            <Skeleton className="h-6 w-36" />
+            <div className="flex flex-1 items-center justify-end space-x-2">
+              <Skeleton className="h-8 w-24" />
+              <Skeleton className="h-8 w-24" />
+            </div>
+          </div>
         </header>
         <main className="flex-1">
           <div className="container mx-auto py-8 px-4">
             <div className="grid gap-8 max-w-4xl mx-auto">
               <Skeleton className="h-64 w-full" />
               <div className="space-y-4">
-                 <Skeleton className="h-10 w-48" />
-                 <Skeleton className="h-24 w-full" />
-                 <Skeleton className="h-20 w-full" />
-                 <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-10 w-48" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
               </div>
             </div>
           </div>
@@ -164,39 +218,72 @@ export default function Home() {
       <Header tasks={tasks} />
       <main className="flex-1">
         <div className="container mx-auto py-8 px-4">
-          <div className="grid gap-8 max-w-4xl mx-auto">
-            <TaskForm onSubmit={handleAddTask} />
-            
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-2xl font-bold tracking-tight">Your Day's Tasks</h2>
-                <Button onClick={handlePrioritize} disabled={isAiLoading || tasks.filter(t => !t.completed).length < 2}>
-                  {isAiLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Bot className="mr-2 h-4 w-4" />
-                  )}
-                  Prioritize with AI
-                </Button>
-              </div>
+          <div className="max-w-4xl mx-auto">
+            <Tabs defaultValue="tasks" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="tasks">Day Compass</TabsTrigger>
+                <TabsTrigger value="expenses">Expense Tracker</TabsTrigger>
+              </TabsList>
+              <TabsContent value="tasks" className="mt-6">
+                <div className="grid gap-8">
+                  <TaskForm onSubmit={handleAddTask} />
 
-              {aiReasoning && (
-                <Alert>
-                  <Lightbulb className="h-4 w-4" />
-                  <AlertTitle>AI Suggestion</AlertTitle>
-                  <AlertDescription>{aiReasoning}</AlertDescription>
-                </Alert>
-              )}
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <h2 className="text-2xl font-bold tracking-tight">
+                        Your Day's Tasks
+                      </h2>
+                      <Button
+                        onClick={handlePrioritize}
+                        disabled={
+                          isAiLoading ||
+                          tasks.filter((t) => !t.completed).length < 2
+                        }
+                      >
+                        {isAiLoading ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Bot className="mr-2 h-4 w-4" />
+                        )}
+                        Prioritize with AI
+                      </Button>
+                    </div>
 
-              <ProgressTracker tasks={tasks} />
-              
-              <TaskList
-                tasks={tasks}
-                onToggleComplete={handleToggleComplete}
-                onDelete={handleDeleteTask}
-                onUpdate={handleUpdateTask}
-              />
-            </div>
+                    {aiReasoning && (
+                      <Alert>
+                        <Lightbulb className="h-4 w-4" />
+                        <AlertTitle>AI Suggestion</AlertTitle>
+                        <AlertDescription>{aiReasoning}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <ProgressTracker tasks={tasks} />
+
+                    <TaskList
+                      tasks={tasks}
+                      onToggleComplete={handleToggleComplete}
+                      onDelete={handleDeleteTask}
+                      onUpdate={handleUpdateTask}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="expenses" className="mt-6">
+                <div className="grid gap-8">
+                  <ExpenseForm onSubmit={handleAddExpense} />
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold tracking-tight">
+                      Your Expenses
+                    </h2>
+                    <ExpenseSummary expenses={expenses} />
+                    <ExpenseList
+                      expenses={expenses}
+                      onDelete={handleDeleteExpense}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </main>
