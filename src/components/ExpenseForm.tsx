@@ -95,7 +95,7 @@ export default function ExpenseForm({
       title: "",
       amount: "" as any,
       date: new Date(),
-      category: undefined,
+      category: "",
       status: "completed",
       recurrence: "one-time",
       notes: "",
@@ -107,14 +107,14 @@ export default function ExpenseForm({
       if (expense) {
         form.reset({
           ...expense,
-          amount: expense.amount,
+          notes: expense.notes || "",
         });
       } else {
         form.reset({
           title: "",
           amount: "" as any,
           date: new Date(),
-          category: undefined,
+          category: "",
           status: "completed",
           recurrence: "one-time",
           notes: "",
