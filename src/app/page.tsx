@@ -222,7 +222,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background">
       <Header />
       
       <ExpenseForm
@@ -257,11 +257,11 @@ export default function Home() {
         </DialogContent>
       </Dialog>
       
-      <main className="flex-1">
-        <div className="container mx-auto py-8 px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:items-start">
+      <main className="flex-1 overflow-hidden">
+        <div className="container mx-auto px-4 h-full">
+            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8 h-full">
                 {/* Main Content */}
-                <div className="lg:col-span-2 xl:col-span-3 space-y-8">
+                <div className="lg:col-span-2 xl:col-span-3 space-y-8 overflow-y-auto py-8">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                         <div>
                         <h1 className="text-3xl md:text-4xl font-bold mb-1">
@@ -340,7 +340,7 @@ export default function Home() {
                 </div>
 
                 {/* Sidebar */}
-                <div className="lg:col-span-1 xl:col-span-1 space-y-6 lg:sticky top-24">
+                <div className="lg:col-span-1 xl:col-span-1 space-y-6 overflow-y-auto py-8">
                     <ExpenseSummary user={user} expenses={filteredExpenses} />
                     <CategoryBudgets user={user} expenses={filteredExpenses} />
                     <SpendingChart expenses={filteredExpenses} currency={user.currency} />
@@ -352,3 +352,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
