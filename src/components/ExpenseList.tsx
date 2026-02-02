@@ -2,6 +2,7 @@ import type { Expense, UserProfile } from "@/app/types";
 import ExpenseItem from "./ExpenseItem";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart2 } from "lucide-react";
+import { isToday, isYesterday, isAfter, subDays, startOfMonth, format } from 'date-fns';
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -25,21 +26,66 @@ export default function ExpenseList({ expenses, onDelete, onEdit, user }: Expens
     );
   }
 
-  const sortedExpenses = [...expenses].sort(
-    (a, b) => b.date.getTime() - a.date.getTime()
-  );
+  const groupExpenses = (expenses: Expense[]) => {
+    const now = new Date();
+    
+    // Using an array to maintain order of groups
+    const groups: {title: string, expenses: Expense[]}[] = [];
+    const groupMap: {[key: string]: Expense[]} = {};
+
+    const findOrCreateGroup = (title: string) => {
+        if (!groupMap[title]) {
+            groupMap[title] = [];
+            groups.push({ title, expenses: groupMap[title] });
+        }
+        return groupMap[title];
+    };
+
+    const sortedExpenses = [...expenses].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    sortedExpenses.forEach(expense => {
+        const expenseDate = new Date(expense.date);
+        let groupTitle: string;
+
+        if (isToday(expenseDate)) {
+            groupTitle = 'Today';
+        } else if (isYesterday(expenseDate)) {
+            groupTitle = 'Yesterday';
+        } else if (isAfter(expenseDate, subDays(now, 7))) {
+            groupTitle = 'Previous 7 Days';
+        } else if (isAfter(expenseDate, startOfMonth(now))) {
+            groupTitle = 'This Month';
+        } else {
+            groupTitle = format(expenseDate, 'MMMM yyyy');
+        }
+        
+        const group = findOrCreateGroup(groupTitle);
+        group.push(expense);
+    });
+      
+    return groups;
+  };
+
+  const groupedExpenses = groupExpenses(expenses);
 
   return (
-    <div className="space-y-4">
-      {sortedExpenses.map((expense) => (
-        <ExpenseItem
-          key={expense.id}
-          expense={expense}
-          onDelete={onDelete}
-          onEdit={onEdit}
-          currency={user.currency}
-          customCategories={user.customCategories}
-        />
+    <div className="space-y-6">
+      {groupedExpenses.map(group => (
+        <div key={group.title}>
+            <h3 className="text-base font-semibold mb-2 text-muted-foreground sticky top-0 bg-background/95 py-2 backdrop-blur-sm">{group.title}</h3>
+            <div className="space-y-4">
+                {group.expenses.map((expense) => (
+                    <ExpenseItem
+                    key={expense.id}
+                    expense={expense}
+                    onDelete={onDelete}
+                    onEdit={onEdit}
+                    currency={user.currency}
+                    customCategories={user.customCategories}
+                    />
+                ))}
+            </div>
+        </div>
       ))}
     </div>
   );
