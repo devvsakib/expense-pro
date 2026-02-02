@@ -1,10 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, PlusCircle, DollarSign } from "lucide-react";
+import { Calendar as CalendarIcon, DollarSign } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,57 +31,116 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { expenseCategories, type ExpenseCategory } from "@/app/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  expenseCategories,
+  expenseStatuses,
+  recurrenceOptions,
+  type Expense,
+} from "@/app/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 const formSchema = z.object({
-  description: z.string().min(2, {
-    message: "Description must be at least 2 characters.",
+  title: z.string().min(2, {
+    message: "Title must be at least 2 characters.",
   }),
   amount: z.coerce.number().positive({ message: "Amount must be positive." }),
+  date: z.date({
+    required_error: "An expense date is required.",
+  }),
   category: z.enum(expenseCategories, {
     required_error: "Please select a category.",
   }),
-  date: z.date({
-    required_error: "A date is required.",
+  status: z.enum(expenseStatuses, {
+    required_error: "Please select a status.",
   }),
+  recurrence: z.enum(recurrenceOptions, {
+    required_error: "Please select a recurrence.",
+  }),
+  notes: z.string().optional(),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 interface ExpenseFormProps {
-  onSubmit: (values: z.infer<typeof formSchema>) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (values: FormValues) => void;
+  expense: Expense | null;
 }
 
-export default function ExpenseForm({ onSubmit }: ExpenseFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
+export default function ExpenseForm({
+  isOpen,
+  onClose,
+  onSubmit,
+  expense,
+}: ExpenseFormProps) {
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      description: "",
+      title: "",
       amount: undefined,
-      category: "Food",
       date: new Date(),
+      category: "Food",
+      status: "completed",
+      recurrence: "one-time",
+      notes: "",
     },
   });
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+  useEffect(() => {
+    if (expense) {
+      form.reset({
+        ...expense,
+        amount: expense.amount,
+      });
+    } else {
+      form.reset({
+        title: "",
+        amount: undefined,
+        date: new Date(),
+        category: "Food",
+        status: "completed",
+        recurrence: "one-time",
+        notes: "",
+      });
+    }
+  }, [expense, form, isOpen]);
+
+  const handleSubmit = (values: FormValues) => {
     onSubmit(values);
-    form.reset();
-    form.setValue("date", new Date());
+  };
+  
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add a New Expense</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Dialog open={isOpen} onOpenChange={handleDialogChange}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>{expense ? "Edit Expense" : "Add New Expense"}</DialogTitle>
+          <DialogDescription>
+            Fill in the details of your expense. Click save when you're done.
+          </DialogDescription>
+        </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 pt-4">
             <FormField
               control={form.control}
-              name="description"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Expense Description</FormLabel>
+                  <FormLabel>Title</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Lunch with colleagues" {...field} />
                   </FormControl>
@@ -89,7 +149,7 @@ export default function ExpenseForm({ onSubmit }: ExpenseFormProps) {
               )}
             />
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="amount"
@@ -109,35 +169,10 @@ export default function ExpenseForm({ onSubmit }: ExpenseFormProps) {
 
               <FormField
                 control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Category</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {expenseCategories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="date"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>Date of Expense</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -172,12 +207,110 @@ export default function ExpenseForm({ onSubmit }: ExpenseFormProps) {
               />
             </div>
             
-            <Button type="submit" className="w-full md:w-auto">
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Expense
-            </Button>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {expenseCategories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {expenseStatuses.map((status) => (
+                            <SelectItem key={status} value={status} className="capitalize">
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="recurrence"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Recurrence</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select recurrence" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {recurrenceOptions.map((option) => (
+                            <SelectItem key={option} value={option} className="capitalize">
+                              {option.replace("-", " ")}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Add any extra details about the expense..."
+                      className="resize-none"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                {expense ? "Save Changes" : "Add Expense"}
+              </Button>
+            </DialogFooter>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }

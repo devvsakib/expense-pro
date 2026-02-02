@@ -1,44 +1,54 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import type { Task, Expense, ExpenseCategory } from "@/app/types";
-import { prioritizeTasks } from "@/ai/flows/ai-prioritize-tasks";
-import type { TaskInput } from "@/ai/flows/ai-prioritize-tasks";
-import { format } from "date-fns";
+import { useState, useEffect, useMemo } from "react";
+import type { Expense, ExpenseStatus, UserProfile } from "@/app/types";
 
 import Header from "@/components/Header";
-import TaskForm from "@/components/TaskForm";
-import TaskList from "@/components/TaskList";
-import ProgressTracker from "@/components/ProgressTracker";
-import ExpenseForm from "@/components/ExpenseForm";
 import ExpenseList from "@/components/ExpenseList";
 import ExpenseSummary from "@/components/ExpenseSummary";
-import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Bot, Loader2, Lightbulb } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { PlusCircle, Search } from "lucide-react";
+import ExpenseForm from "@/components/ExpenseForm";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// MOCK_USER will be replaced by onboarding flow later
+const MOCK_USER: UserProfile = {
+  name: "Alex",
+  monthlyBudget: 3000,
+};
 
 export default function Home() {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isClient, setIsClient] = useState(false);
-  const [isAiLoading, startAiTransition] = useTransition();
-  const [aiReasoning, setAiReasoning] = useState<string | null>(null);
+  const [isFormOpen, setFormOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | ExpenseStatus>(
+    "all"
+  );
 
   // Load state from localStorage
   useEffect(() => {
     setIsClient(true);
     try {
-      const storedTasks = localStorage.getItem("day-compass-tasks");
-      if (storedTasks) {
-        const parsedTasks = JSON.parse(storedTasks).map((task: any) => ({
-          ...task,
-          deadline: new Date(task.deadline),
-        }));
-        setTasks(parsedTasks);
+      const storedUser = localStorage.getItem("expense-tracker-user");
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      } else {
+        setUser(MOCK_USER);
+        localStorage.setItem("expense-tracker-user", JSON.stringify(MOCK_USER));
       }
-      const storedExpenses = localStorage.getItem("day-compass-expenses");
+
+      const storedExpenses = localStorage.getItem("expense-tracker-expenses");
       if (storedExpenses) {
         const parsedExpenses = JSON.parse(storedExpenses).map(
           (expense: any) => ({
@@ -53,159 +63,78 @@ export default function Home() {
     }
   }, []);
 
-  // Save tasks to localStorage
-  useEffect(() => {
-    if (isClient) {
-      try {
-        localStorage.setItem("day-compass-tasks", JSON.stringify(tasks));
-      } catch (error) {
-        console.error("Failed to save tasks to localStorage", error);
-      }
-    }
-  }, [tasks, isClient]);
-
   // Save expenses to localStorage
   useEffect(() => {
     if (isClient) {
       try {
-        localStorage.setItem("day-compass-expenses", JSON.stringify(expenses));
+        localStorage.setItem("expense-tracker-expenses", JSON.stringify(expenses));
       } catch (error) {
         console.error("Failed to save expenses to localStorage", error);
       }
     }
   }, [expenses, isClient]);
 
-  // Task handlers
-  const handleAddTask = (formValues: {
-    description: string;
-    deadline: Date;
-    importance: "low" | "medium" | "high";
-    estimatedEffort: string;
-  }) => {
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      ...formValues,
-      completed: false,
-    };
-    setTasks((prev) => [...prev, newTask]);
-    setAiReasoning(null);
+  const handleOpenForm = (expense?: Expense) => {
+    setEditingExpense(expense || null);
+    setFormOpen(true);
   };
 
-  const handleToggleComplete = (id: string) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const handleCloseForm = () => {
+    setFormOpen(false);
+    setEditingExpense(null);
   };
 
-  const handleDeleteTask = (id: string) => {
-    setTasks(tasks.filter((task) => task.id !== id));
-  };
-
-  const handleUpdateTask = (id: string, updates: Partial<Task>) => {
-    setTasks(
-      tasks.map((task) => (task.id === id ? { ...task, ...updates } : task))
-    );
-  };
-
-  const handlePrioritize = () => {
-    if (tasks.filter((t) => !t.completed).length < 2) {
-      setAiReasoning("You need at least two incomplete tasks to prioritize.");
-      return;
-    }
-
-    startAiTransition(async () => {
-      setAiReasoning(null);
-      const uncompletedTasks = tasks.filter((t) => !t.completed);
-      const completedTasks = tasks.filter((t) => t.completed);
-
-      const aiInput: TaskInput = {
-        tasks: uncompletedTasks.map((task) => ({
-          ...task,
-          deadline: format(task.deadline, "yyyy-MM-dd"),
-        })),
+  const handleSaveExpense = (formValues: Omit<Expense, "id">) => {
+    if (editingExpense) {
+      // Update existing expense
+      setExpenses(
+        expenses.map((exp) =>
+          exp.id === editingExpense.id ? { ...exp, ...formValues } : exp
+        )
+      );
+    } else {
+      // Add new expense
+      const newExpense: Expense = {
+        id: crypto.randomUUID(),
+        ...formValues,
       };
-
-      try {
-        const result = await prioritizeTasks(aiInput);
-
-        const prioritizedUncompletedTasks = result.prioritizedTasks
-          .map((aiTask) => {
-            // Find task by description, assuming descriptions are unique for this operation
-            const foundTask = uncompletedTasks.find(
-              (t) => t.description === aiTask.description
-            );
-            return foundTask;
-          })
-          .filter(Boolean) as Task[];
-
-        const allFoundIds = new Set(
-          prioritizedUncompletedTasks.map((t) => t.id)
-        );
-        const missingTasks = uncompletedTasks.filter(
-          (t) => !allFoundIds.has(t.id)
-        );
-
-        if (missingTasks.length > 0) {
-          console.error("Mismatch in prioritized tasks count.");
-          setAiReasoning(
-            "AI prioritization resulted in a task mismatch. Re-displaying original order."
-          );
-          setTasks([...uncompletedTasks, ...completedTasks]);
-        } else {
-          setTasks([...prioritizedUncompletedTasks, ...completedTasks]);
-          setAiReasoning(result.reasoning);
-        }
-      } catch (error) {
-        console.error("AI prioritization failed:", error);
-        setAiReasoning(
-          "Sorry, the AI prioritization failed. Please try again."
-        );
-      }
-    });
-  };
-
-  // Expense handlers
-  const handleAddExpense = (formValues: {
-    description: string;
-    amount: number;
-    category: ExpenseCategory;
-    date: Date;
-  }) => {
-    const newExpense: Expense = {
-      id: crypto.randomUUID(),
-      ...formValues,
-    };
-    setExpenses((prev) => [...prev, newExpense]);
+      setExpenses((prev) => [newExpense, ...prev]);
+    }
+    handleCloseForm();
   };
 
   const handleDeleteExpense = (id: string) => {
     setExpenses(expenses.filter((expense) => expense.id !== id));
   };
+  
+  const filteredExpenses = useMemo(() => {
+    return expenses
+      .filter((expense) =>
+        expense.title.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .filter(
+        (expense) => statusFilter === "all" || expense.status === statusFilter
+      );
+  }, [expenses, searchQuery, statusFilter]);
 
-  if (!isClient) {
+  if (!isClient || !user) {
     return (
       <div className="flex flex-col min-h-screen">
         <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
           <div className="container flex h-16 items-center">
             <Skeleton className="h-6 w-36" />
-            <div className="flex flex-1 items-center justify-end space-x-2">
-              <Skeleton className="h-8 w-24" />
-              <Skeleton className="h-8 w-24" />
-            </div>
           </div>
         </header>
         <main className="flex-1">
           <div className="container mx-auto py-8 px-4">
-            <div className="grid gap-8 max-w-4xl mx-auto">
-              <Skeleton className="h-64 w-full" />
-              <div className="space-y-4">
-                <Skeleton className="h-10 w-48" />
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-20 w-full" />
+            <div className="grid gap-8 max-w-6xl mx-auto">
+              <Skeleton className="h-12 w-1/2" />
+              <div className="grid md:grid-cols-3 gap-6">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
               </div>
+              <Skeleton className="h-64 w-full" />
             </div>
           </div>
         </main>
@@ -213,77 +142,77 @@ export default function Home() {
     );
   }
 
+  // TODO: Add Onboarding flow
+  // if (!user.name) {
+  //   return <OnboardingWizard />;
+  // }
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <Header tasks={tasks} />
+      <Header />
+      
+      <ExpenseForm
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        onSubmit={handleSaveExpense}
+        expense={editingExpense}
+      />
+      
       <main className="flex-1">
         <div className="container mx-auto py-8 px-4">
-          <div className="max-w-4xl mx-auto">
-            <Tabs defaultValue="tasks" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="tasks">Day Compass</TabsTrigger>
-                <TabsTrigger value="expenses">Expense Tracker</TabsTrigger>
-              </TabsList>
-              <TabsContent value="tasks" className="mt-6">
-                <div className="grid gap-8">
-                  <TaskForm onSubmit={handleAddTask} />
+          <div className="max-w-6xl mx-auto">
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">
+              Welcome back, {user.name}!
+            </h1>
+            <p className="text-muted-foreground mb-8">
+              Here's your financial overview for this month.
+            </p>
 
-                  <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                      <h2 className="text-2xl font-bold tracking-tight">
-                        Your Day's Tasks
-                      </h2>
-                      <Button
-                        onClick={handlePrioritize}
-                        disabled={
-                          isAiLoading ||
-                          tasks.filter((t) => !t.completed).length < 2
-                        }
-                      >
-                        {isAiLoading ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Bot className="mr-2 h-4 w-4" />
-                        )}
-                        Prioritize with AI
-                      </Button>
-                    </div>
+            <ExpenseSummary budget={user.monthlyBudget} expenses={expenses} />
 
-                    {aiReasoning && (
-                      <Alert>
-                        <Lightbulb className="h-4 w-4" />
-                        <AlertTitle>AI Suggestion</AlertTitle>
-                        <AlertDescription>{aiReasoning}</AlertDescription>
-                      </Alert>
-                    )}
-
-                    <ProgressTracker tasks={tasks} />
-
-                    <TaskList
-                      tasks={tasks}
-                      onToggleComplete={handleToggleComplete}
-                      onDelete={handleDeleteTask}
-                      onUpdate={handleUpdateTask}
+            <div className="mt-8">
+              <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                <h2 className="text-2xl font-bold tracking-tight">
+                  Your Expenses
+                </h2>
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                  <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search expenses..."
+                      className="pl-9"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
+                  <Select
+                    onValueChange={(value: "all" | ExpenseStatus) =>
+                      setStatusFilter(value)
+                    }
+                    defaultValue="all"
+                  >
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="upcoming">Upcoming</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button onClick={() => handleOpenForm()} className="whitespace-nowrap">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Expense
+                  </Button>
                 </div>
-              </TabsContent>
-              <TabsContent value="expenses" className="mt-6">
-                <div className="grid gap-8">
-                  <ExpenseForm onSubmit={handleAddExpense} />
-                  <div className="space-y-4">
-                    <h2 className="text-2xl font-bold tracking-tight">
-                      Your Expenses
-                    </h2>
-                    <ExpenseSummary expenses={expenses} />
-                    <ExpenseList
-                      expenses={expenses}
-                      onDelete={handleDeleteExpense}
-                    />
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+              </div>
+              <ExpenseList
+                expenses={filteredExpenses}
+                onDelete={handleDeleteExpense}
+                onEdit={handleOpenForm}
+              />
+            </div>
           </div>
         </div>
       </main>
