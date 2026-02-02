@@ -17,11 +17,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { UserProfile, Currency, CustomCategory } from '@/app/types';
+import type { UserProfile, Currency, CustomCategory, Expense } from '@/app/types';
 import { currencyOptions } from '@/app/types';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, PlusCircle, Trash2 } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   AlertDialog,
@@ -44,6 +44,11 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { format } from 'date-fns';
+import { unparse } from 'papaparse';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { getCurrencySymbol } from '@/lib/utils';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -69,6 +74,7 @@ type CategoryFormValues = z.infer<typeof categoryFormSchema>;
 
 export default function SettingsPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isCategoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const { toast } = useToast();
@@ -88,15 +94,29 @@ export default function SettingsPage() {
   
   useEffect(() => {
     setIsClient(true);
-    const storedUser = localStorage.getItem('expense-tracker-user');
-    if (storedUser) {
-      const parsedUser: UserProfile = JSON.parse(storedUser);
-      setUser(parsedUser);
-      profileForm.reset({
-          ...parsedUser,
-          salary: parsedUser.salary || '',
-          salaryPassword: parsedUser.salaryPassword || '',
-      });
+    try {
+        const storedUser = localStorage.getItem('expense-tracker-user');
+        if (storedUser) {
+          const parsedUser: UserProfile = JSON.parse(storedUser);
+          setUser(parsedUser);
+          profileForm.reset({
+              ...parsedUser,
+              salary: parsedUser.salary || '',
+              salaryPassword: parsedUser.salaryPassword || '',
+          });
+        }
+        const storedExpenses = localStorage.getItem('expense-tracker-expenses');
+        if (storedExpenses) {
+            const parsedExpenses = JSON.parse(storedExpenses).map(
+              (expense: any) => ({
+                ...expense,
+                date: new Date(expense.date),
+              })
+            );
+            setExpenses(parsedExpenses);
+        }
+    } catch(error) {
+        console.error("Failed to load data from localStorage", error);
     }
   }, [profileForm]);
 
@@ -148,11 +168,109 @@ export default function SettingsPage() {
   const handleResetData = () => {
     localStorage.removeItem('expense-tracker-user');
     localStorage.removeItem('expense-tracker-expenses');
+    localStorage.removeItem('expense-tracker-savings-goals');
+    localStorage.removeItem('task-planner-tasks');
     toast({
         title: 'Data Reset',
         description: 'All your application data has been cleared.',
     });
     window.location.href = '/';
+  }
+
+  const downloadFile = (data: string, filename: string, type: string) => {
+    const blob = new Blob([data], { type });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExport = (exportFormat: 'csv' | 'txt' | 'pdf') => {
+    if (!user || expenses.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No data to export",
+        description: "There is no expense data to export.",
+      });
+      return;
+    }
+    
+    const date = format(new Date(), 'yyyy-MM-dd');
+    const dataToExport = expenses.map(e => ({
+        ID: e.id,
+        Title: e.title,
+        Amount: e.amount,
+        Currency: user!.currency,
+        Date: format(e.date, "yyyy-MM-dd"),
+        Category: e.category,
+        Status: e.status,
+        Recurrence: e.recurrence,
+        Notes: e.notes || "",
+    }));
+
+    if (exportFormat === 'csv') {
+      const csv = unparse(dataToExport);
+      downloadFile(csv, `xpns-export-${date}.csv`, 'text/csv;charset=utf-8;');
+    } else if (exportFormat === 'txt') {
+      let txtContent = `XPNS Data Export - ${date}\n\n`;
+      txtContent += `User: ${user.name}\n`;
+      txtContent += `Monthly Budget: ${user.monthlyBudget} ${user.currency}\n`;
+      txtContent += `------------------------------------\n\n`;
+      txtContent += `Expenses (${expenses.length}):\n\n`;
+
+      dataToExport.forEach(e => {
+          txtContent += `Title: ${e.Title}\n`;
+          txtContent += `Amount: ${e.Amount} ${e.Currency}\n`;
+          txtContent += `Date: ${e.Date}\n`;
+          txtContent += `Category: ${e.Category}\n`;
+          txtContent += `Status: ${e.Status}\n`;
+          txtContent += `Recurrence: ${e.Recurrence}\n`;
+          txtContent += `Notes: ${e.Notes}\n`;
+          txtContent += `----------------\n`;
+      });
+      downloadFile(txtContent, `xpns-export-${date}.txt`, 'text/plain;charset=utf-8;');
+    } else if (exportFormat === 'pdf') {
+        const doc = new jsPDF();
+
+        doc.setFontSize(18);
+        doc.text("XPNS Data Export", 14, 22);
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`Generated on: ${date}`, 14, 30);
+        doc.text(`User: ${user.name}`, 14, 35);
+        doc.text(`Monthly Budget: ${getCurrencySymbol(user.currency)}${user.monthlyBudget.toLocaleString()}`, 14, 40);
+
+        const tableColumn = ["Date", "Title", "Category", "Amount"];
+        const tableRows: (string | number)[][] = [];
+
+        dataToExport.forEach(item => {
+            const expenseData = [
+                item.Date,
+                item.Title,
+                item.Category,
+                `${getCurrencySymbol(item.Currency)}${item.Amount.toFixed(2)}`
+            ];
+            tableRows.push(expenseData);
+        });
+
+        (doc as any).autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 50,
+        });
+        
+        doc.save(`xpns-export-${date}.pdf`);
+    }
+
+    toast({
+      title: "Download Started",
+      description: `Your data export in ${exportFormat.toUpperCase()} format is being downloaded.`,
+    });
   }
   
   if (!isClient || !user) {
@@ -354,6 +472,24 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle>Data Export</CardTitle>
+                <CardDescription>Download all your expense data in various formats.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => handleExport('csv')}>
+                    <Download className="mr-2"/> Export as CSV
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => handleExport('txt')}>
+                    <Download className="mr-2"/> Export as TXT
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => handleExport('pdf')}>
+                    <Download className="mr-2"/> Export as PDF
+                </Button>
+              </CardContent>
+            </Card>
+
             <Card className="border-destructive">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle/> Danger Zone</CardTitle>
@@ -369,7 +505,7 @@ export default function SettingsPage() {
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
                                 This action cannot be undone. This will permanently delete all your
-                                expenses and profile data from this device.
+                                application data from this device.
                             </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
