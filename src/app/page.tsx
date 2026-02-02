@@ -192,7 +192,7 @@ export default function Home() {
       />
       
       <main className="flex-1 overflow-hidden">
-        <div className="container mx-auto h-full flex flex-col">
+        <div className="container mx-auto h-full flex flex-col px-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 py-8">
                 <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-1">
