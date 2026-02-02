@@ -231,6 +231,7 @@ export default function Home() {
         onSubmit={handleSaveExpense}
         expense={editingExpense}
         user={user}
+        expenses={expenses}
       />
 
       <Dialog open={isReportDialogOpen} onOpenChange={setReportDialogOpen}>
@@ -258,7 +259,7 @@ export default function Home() {
       </Dialog>
       
       <main className="flex-1 overflow-hidden">
-        <div className="container mx-auto h-full">
+        <div className="container mx-auto h-full flex flex-col">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 py-8">
                 <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-1">
@@ -278,58 +279,58 @@ export default function Home() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8 h-[calc(100%-120px)]">
+            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-8 flex-1 overflow-hidden">
                 {/* Main Content */}
-                <div className="lg:col-span-2 xl:col-span-3 h-full overflow-y-auto no-scrollbar">
-                    <div className="space-y-8">
-                        <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-                            <h2 className="text-2xl font-bold tracking-tight">
-                            Your Expenses
-                            </h2>
-                            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                            <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                placeholder="Search expenses..."
-                                className="pl-9 w-full"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                            <Select
-                                onValueChange={(value: "all" | "week" | "month" | "year") =>
-                                setDateFilter(value as any)
-                                }
-                                defaultValue="all"
-                            >
-                                <SelectTrigger className="w-full sm:w-[160px]">
-                                <SelectValue placeholder="Filter by date" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                <SelectItem value="all">All Time</SelectItem>
-                                <SelectItem value="week">This Week</SelectItem>
-                                <SelectItem value="month">This Month</SelectItem>
-                                <SelectItem value="year">This Year</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Select
-                                onValueChange={(value: "all" | ExpenseStatus) =>
-                                setStatusFilter(value)
-                                }
-                                defaultValue="all"
-                            >
-                                <SelectTrigger className="w-full sm:w-[160px]">
-                                <SelectValue placeholder="Filter by status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                <SelectItem value="all">All Statuses</SelectItem>
-                                <SelectItem value="completed">Completed</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="upcoming">Upcoming</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            </div>
+                <div className="md:col-span-2 xl:col-span-3 h-full flex flex-col">
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                        <h2 className="text-2xl font-bold tracking-tight self-start">
+                        Your Expenses
+                        </h2>
+                        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                        <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                            placeholder="Search expenses..."
+                            className="pl-9 w-full"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            />
                         </div>
+                        <Select
+                            onValueChange={(value: "all" | "week" | "month" | "year") =>
+                            setDateFilter(value as any)
+                            }
+                            defaultValue="all"
+                        >
+                            <SelectTrigger className="w-full sm:w-[160px]">
+                            <SelectValue placeholder="Filter by date" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="all">All Time</SelectItem>
+                            <SelectItem value="week">This Week</SelectItem>
+                            <SelectItem value="month">This Month</SelectItem>
+                            <SelectItem value="year">This Year</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <Select
+                            onValueChange={(value: "all" | ExpenseStatus) =>
+                            setStatusFilter(value)
+                            }
+                            defaultValue="all"
+                        >
+                            <SelectTrigger className="w-full sm:w-[160px]">
+                            <SelectValue placeholder="Filter by status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="all">All Statuses</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="upcoming">Upcoming</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        </div>
+                    </div>
+                     <div className="flex-1 overflow-y-auto no-scrollbar">
                         <ExpenseList
                             expenses={filteredExpenses}
                             onDelete={handleDeleteExpense}
@@ -340,8 +341,8 @@ export default function Home() {
                 </div>
 
                 {/* Sidebar */}
-                <div className="lg:col-span-1 xl:col-span-1 h-full overflow-y-auto no-scrollbar">
-                    <div className="lg:sticky lg:top-0 space-y-6">
+                <div className="hidden md:block md:col-span-1 xl:col-span-1 h-full overflow-y-auto no-scrollbar">
+                    <div className="space-y-6">
                         <ExpenseSummary user={user} expenses={filteredExpenses} />
                         <CategoryBudgets user={user} expenses={filteredExpenses} />
                         <SpendingChart expenses={filteredExpenses} currency={user.currency} />

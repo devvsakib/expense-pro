@@ -18,6 +18,17 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Sparkles, ListTodo, Loader2, CalendarCheck, ArrowRight } from 'lucide-react';
 import Header from '@/components/Header';
 import TaskForm from '@/components/TaskForm';
@@ -83,6 +94,10 @@ export default function PlannerPage() {
 
   const handleDeleteTask = (id: string) => {
     setTasks(tasks.filter(task => task.id !== id));
+    toast({
+        title: "Task Deleted",
+        description: "The task has been removed from your list.",
+    });
   };
   
   const handleUpdateTask = (id: string, updates: Partial<Task>) => {

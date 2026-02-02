@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { format } from "date-fns";
+import { format, startOfMonth } from "date-fns";
 import { Calendar as CalendarIcon, Camera, Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { scanReceipt } from "@/ai/flows/ai-receipt-scanner";
 import { useToast } from "@/hooks/use-toast";
 import { suggestCategory } from "@/ai/flows/ai-categorize-expense";
+import { Progress } from "./ui/progress";
 
 
 const formSchema = z.object({
@@ -83,6 +84,7 @@ interface ExpenseFormProps {
   onSubmit: (values: FormValues) => void;
   expense: Expense | null;
   user: UserProfile;
+  expenses: Expense[];
 }
 
 export default function ExpenseForm({
@@ -91,6 +93,7 @@ export default function ExpenseForm({
   onSubmit,
   expense,
   user,
+  expenses,
 }: ExpenseFormProps) {
   const currencySymbol = getCurrencySymbol(user.currency);
   const form = useForm<FormValues>({
@@ -178,6 +181,40 @@ export default function ExpenseForm({
         setAiSuggestedCategory(null);
     }
   }, [categoryValue, dirtyFields.category, aiSuggestedCategory]);
+
+  const budgetInfo = useMemo(() => {
+    if (!categoryValue || !user.categoryBudgets || !expenses) {
+        return null;
+    }
+
+    const budget = user.categoryBudgets.find(b => b.category === categoryValue);
+    if (!budget) {
+        return null;
+    }
+
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+
+    const spentThisMonth = expenses
+        .filter(e => 
+            e.category === categoryValue && 
+            new Date(e.date) >= monthStart && 
+            new Date(e.date) <= now
+        )
+        .reduce((sum, e) => {
+            // If we are editing, don't include the current expense's amount in the 'spent' total
+            if (expense && e.id === expense.id) {
+                return sum;
+            }
+            return sum + e.amount;
+        }, 0);
+    
+    const remaining = budget.amount - spentThisMonth;
+    const progress = budget.amount > 0 ? (spentThisMonth / budget.amount) * 100 : 0;
+
+    return { ...budget, spent: spentThisMonth, remaining, progress };
+  }, [categoryValue, user.categoryBudgets, expenses, expense]);
+
 
   const handleSubmit = (values: FormValues) => {
     onSubmit(values);
@@ -418,6 +455,18 @@ export default function ExpenseForm({
                       </Select>
                       {aiCategoryError && <p className="text-xs text-destructive pt-1">{aiCategoryError}</p>}
                       <FormMessage />
+                       {budgetInfo && (
+                            <div className="mt-2 text-xs p-3 rounded-md bg-secondary border">
+                                <div className="flex justify-between mb-1 font-medium">
+                                    <span>Monthly Budget</span>
+                                    <span>{currencySymbol}{budgetInfo.spent.toLocaleString()} / {currencySymbol}{budgetInfo.amount.toLocaleString()}</span>
+                                </div>
+                                <Progress value={budgetInfo.progress} className="h-1.5" />
+                                <p className={`text-right mt-1 font-medium ${budgetInfo.remaining < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                    {currencySymbol}{budgetInfo.remaining.toLocaleString()} remaining
+                                </p>
+                            </div>
+                        )}
                     </FormItem>
                   )}
                 />
