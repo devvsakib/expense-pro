@@ -100,6 +100,7 @@ export default function ExpenseForm({
   const [isScanning, setIsScanning] = useState(false);
   const [isCategorizing, setIsCategorizing] = useState(false);
   const [aiSuggestedCategory, setAiSuggestedCategory] = useState<string | null>(null);
+  const [aiCategoryError, setAiCategoryError] = useState<string | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -124,6 +125,7 @@ export default function ExpenseForm({
         });
       }
       setAiSuggestedCategory(null);
+      setAiCategoryError(null);
     }
   }, [expense, form, isOpen]);
 
@@ -145,6 +147,7 @@ export default function ExpenseForm({
         if (titleValue && titleValue.length > 3) {
             setIsCategorizing(true);
             setAiSuggestedCategory(null);
+            setAiCategoryError(null);
             const allCategories = [
                 ...expenseCategories,
                 ...(user.customCategories?.map(c => c.name) || [])
@@ -158,6 +161,7 @@ export default function ExpenseForm({
                 }
             } catch (error) {
                 console.error("Failed to suggest category", error);
+                setAiCategoryError("AI suggestion failed. Please choose a category.");
             } finally {
                 setIsCategorizing(false);
             }
@@ -223,7 +227,7 @@ export default function ExpenseForm({
             toast({
                 variant: "destructive",
                 title: "Scan Failed",
-                description: "Could not extract details from the receipt. Please enter them manually."
+                description: "Could not extract details from the receipt. This might be due to a request limit.",
             });
         } finally {
             setIsScanning(false);
@@ -406,6 +410,7 @@ export default function ExpenseForm({
                           )}
                         </SelectContent>
                       </Select>
+                      {aiCategoryError && <p className="text-xs text-destructive pt-1">{aiCategoryError}</p>}
                       <FormMessage />
                     </FormItem>
                   )}

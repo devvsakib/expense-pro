@@ -124,7 +124,7 @@ export default function PlannerPage() {
       toast({
         variant: "destructive",
         title: "AI Error",
-        description: "Could not prioritize tasks. Please try again later.",
+        description: "Could not prioritize tasks. This might be due to a request limit. Please try again later.",
       });
       setAiModalOpen(false);
     } finally {

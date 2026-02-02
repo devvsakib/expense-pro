@@ -180,7 +180,7 @@ export default function Home() {
     } catch (error) {
       console.error("Failed to generate report", error);
       setAiReport(
-        "Sorry, I couldn't generate the report at this time. Please try again later."
+        "**AI Report Failed**\n\nSorry, I couldn't generate the report. This might be due to reaching a request limit. Please try again later."
       );
     } finally {
       setIsGeneratingReport(false);

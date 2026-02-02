@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -144,7 +145,7 @@ export default function SavingsPage() {
       toast({
         variant: "destructive",
         title: "AI Error",
-        description: "Could not generate a plan. Please try again later.",
+        description: "Could not generate a plan. This may be due to a request limit. Please try again later.",
       });
     } finally {
       setIsGenerating(false);
