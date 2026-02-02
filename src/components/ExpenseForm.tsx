@@ -25,7 +25,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -36,6 +38,7 @@ import {
   expenseStatuses,
   recurrenceOptions,
   type Expense,
+  type UserProfile,
 } from "@/app/types";
 import {
   Dialog,
@@ -55,9 +58,9 @@ const formSchema = z.object({
   date: z.date({
     required_error: "An expense date is required.",
   }),
-  category: z.enum(expenseCategories, {
+  category: z.string({
     required_error: "Please select a category.",
-  }),
+  }).min(1, { message: "Please select a category." }),
   status: z.enum(expenseStatuses, {
     required_error: "Please select a status.",
   }),
@@ -74,7 +77,7 @@ interface ExpenseFormProps {
   onClose: () => void;
   onSubmit: (values: FormValues) => void;
   expense: Expense | null;
-  currency: string;
+  user: UserProfile;
 }
 
 export default function ExpenseForm({
@@ -82,16 +85,16 @@ export default function ExpenseForm({
   onClose,
   onSubmit,
   expense,
-  currency,
+  user,
 }: ExpenseFormProps) {
-  const currencySymbol = getCurrencySymbol(currency);
+  const currencySymbol = getCurrencySymbol(user.currency);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
       amount: undefined,
       date: new Date(),
-      category: "Food",
+      category: undefined,
       status: "completed",
       recurrence: "one-time",
       notes: "",
@@ -99,21 +102,23 @@ export default function ExpenseForm({
   });
 
   useEffect(() => {
-    if (expense) {
-      form.reset({
-        ...expense,
-        amount: expense.amount,
-      });
-    } else {
-      form.reset({
-        title: "",
-        amount: undefined,
-        date: new Date(),
-        category: "Food",
-        status: "completed",
-        recurrence: "one-time",
-        notes: "",
-      });
+    if (isOpen) {
+      if (expense) {
+        form.reset({
+          ...expense,
+          amount: expense.amount,
+        });
+      } else {
+        form.reset({
+          title: "",
+          amount: undefined,
+          date: new Date(),
+          category: undefined,
+          status: "completed",
+          recurrence: "one-time",
+          notes: "",
+        });
+      }
     }
   }, [expense, form, isOpen]);
 
@@ -219,18 +224,34 @@ export default function ExpenseForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a category" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {expenseCategories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
-                          ))}
+                          <SelectGroup>
+                            <SelectLabel>Default Categories</SelectLabel>
+                             {expenseCategories.map((category) => (
+                              <SelectItem key={category} value={category}>
+                                {category}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                          {user.customCategories && user.customCategories.length > 0 && (
+                            <SelectGroup>
+                              <SelectLabel>Custom Categories</SelectLabel>
+                              {user.customCategories.map((cat) => (
+                                <SelectItem key={cat.id} value={cat.name}>
+                                  <div className="flex items-center gap-2">
+                                    <span>{cat.emoji}</span>
+                                    <span>{cat.name}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />

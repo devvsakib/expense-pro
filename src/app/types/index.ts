@@ -23,7 +23,7 @@ export type Expense = {
   title: string;
   amount: number;
   date: Date;
-  category: ExpenseCategory;
+  category: string;
   status: ExpenseStatus;
   recurrence: Recurrence;
   notes?: string;
@@ -53,6 +53,7 @@ export type UserProfile = {
   currency: Currency;
   salary?: number;
   salaryPassword?: string;
+  customCategories?: CustomCategory[];
 };
 
 export const importanceLevels = ["high", "medium", "low"] as const;

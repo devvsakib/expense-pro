@@ -1,4 +1,4 @@
-import type { Expense } from "@/app/types";
+import type { Expense, UserProfile } from "@/app/types";
 import ExpenseItem from "./ExpenseItem";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart2 } from "lucide-react";
@@ -7,10 +7,10 @@ interface ExpenseListProps {
   expenses: Expense[];
   onDelete: (id: string) => void;
   onEdit: (expense: Expense) => void;
-  currency: string;
+  user: UserProfile;
 }
 
-export default function ExpenseList({ expenses, onDelete, onEdit, currency }: ExpenseListProps) {
+export default function ExpenseList({ expenses, onDelete, onEdit, user }: ExpenseListProps) {
   if (expenses.length === 0) {
     return (
       <Card className="text-center py-16 border-dashed border-2">
@@ -37,7 +37,8 @@ export default function ExpenseList({ expenses, onDelete, onEdit, currency }: Ex
           expense={expense}
           onDelete={onDelete}
           onEdit={onEdit}
-          currency={currency}
+          currency={user.currency}
+          customCategories={user.customCategories}
         />
       ))}
     </div>

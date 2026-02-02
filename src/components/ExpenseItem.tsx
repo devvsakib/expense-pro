@@ -1,6 +1,6 @@
 "use client";
 
-import type { Expense, ExpenseCategory } from "@/app/types";
+import type { Expense, ExpenseCategory, CustomCategory } from "@/app/types";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn, getCurrencySymbol } from "@/lib/utils";
+import { cn, getCurrencySymbol, getTextColorForBackground } from "@/lib/utils";
 import React from "react";
 
 const categoryIcons: Record<ExpenseCategory, React.ElementType> = {
@@ -63,18 +63,25 @@ interface ExpenseItemProps {
   onDelete: (id: string) => void;
   onEdit: (expense: Expense) => void;
   currency: string;
+  customCategories?: CustomCategory[];
 }
 
-export default function ExpenseItem({ expense, onDelete, onEdit, currency }: ExpenseItemProps) {
-  const Icon = categoryIcons[expense.category] || Circle;
+export default function ExpenseItem({ expense, onDelete, onEdit, currency, customCategories }: ExpenseItemProps) {
+  const Icon = categoryIcons[expense.category as ExpenseCategory] || Circle;
   const StatusIcon = statusIconMap[expense.status] || Circle;
   const currencySymbol = getCurrencySymbol(currency);
+  
+  const customCategory = customCategories?.find(c => c.name === expense.category);
 
   return (
     <Card className="transition-all hover:shadow-lg animate-in fade-in-0 zoom-in-95">
       <CardContent className="p-4 flex items-start gap-4">
         <div className="flex-shrink-0 h-10 w-10 bg-muted rounded-full flex items-center justify-center mt-1">
-          <Icon className="h-5 w-5 text-muted-foreground" />
+          {customCategory ? (
+            <span className="text-xl">{customCategory.emoji}</span>
+          ) : (
+            <Icon className="h-5 w-5 text-muted-foreground" />
+          )}
         </div>
         <div className="grid gap-1.5 flex-1">
           <div className="flex justify-between items-start">
@@ -88,7 +95,16 @@ export default function ExpenseItem({ expense, onDelete, onEdit, currency }: Exp
             </div>
             <div className="flex items-center gap-1">
               <Tag className="h-3.5 w-3.5" />
-              <Badge variant="outline">{expense.category}</Badge>
+              <Badge 
+                variant="outline"
+                style={customCategory ? { 
+                  backgroundColor: customCategory.color, 
+                  color: getTextColorForBackground(customCategory.color),
+                  borderColor: customCategory.color 
+                } : {}}
+              >
+                {expense.category}
+              </Badge>
             </div>
             <div className="flex items-center gap-1">
               <Repeat className="h-3.5 w-3.5" />

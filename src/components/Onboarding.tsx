@@ -76,13 +76,14 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         ...profileData,
         ...values,
         salary: values.salary || undefined,
-        salaryPassword: values.salaryPassword || undefined
+        salaryPassword: values.salaryPassword || undefined,
+        customCategories: [],
     } as UserProfile;
     onComplete(finalProfile);
   }
 
   const handleSkip = () => {
-    onComplete(profileData as UserProfile);
+    onComplete({ ...profileData, customCategories: [] } as UserProfile);
   };
   
   const variants = {

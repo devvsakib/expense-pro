@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -16,11 +17,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { UserProfile, Currency } from '@/app/types';
+import type { UserProfile, Currency, CustomCategory } from '@/app/types';
 import { currencyOptions } from '@/app/types';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, PlusCircle, Trash2 } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   AlertDialog,
@@ -33,9 +34,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 
-const formSchema = z.object({
+const profileFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   monthlyBudget: z.coerce.number().positive({ message: "Budget must be a positive number." }),
   currency: z.enum(currencyOptions.map(c => c.value) as [Currency, ...Currency[]]),
@@ -48,15 +58,32 @@ const formSchema = z.object({
     path: ["salaryPassword"],
 });
 
-type SettingsFormValues = z.infer<typeof formSchema>;
+const categoryFormSchema = z.object({
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  emoji: z.string().min(1, { message: "An emoji is required." }),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, { message: "Must be a valid hex color." }),
+});
+
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
+type CategoryFormValues = z.infer<typeof categoryFormSchema>;
 
 export default function SettingsPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [isCategoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<SettingsFormValues>({
-    resolver: zodResolver(formSchema),
+  const profileForm = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+  });
+
+  const categoryForm = useForm<CategoryFormValues>({
+    resolver: zodResolver(categoryFormSchema),
+    defaultValues: {
+      name: '',
+      emoji: '💡',
+      color: '#A855F7',
+    }
   });
   
   useEffect(() => {
@@ -65,28 +92,58 @@ export default function SettingsPage() {
     if (storedUser) {
       const parsedUser: UserProfile = JSON.parse(storedUser);
       setUser(parsedUser);
-      form.reset({
+      profileForm.reset({
           ...parsedUser,
           salary: parsedUser.salary || '',
           salaryPassword: parsedUser.salaryPassword || '',
       });
     }
-  }, [form]);
+  }, [profileForm]);
 
-  function onSubmit(values: SettingsFormValues) {
+  const updateUserProfile = (updatedUser: UserProfile) => {
+    setUser(updatedUser);
+    localStorage.setItem('expense-tracker-user', JSON.stringify(updatedUser));
+  };
+
+  function onProfileSubmit(values: ProfileFormValues) {
     const updatedUser = { 
         ...user, 
         ...values,
         salary: values.salary || undefined,
         salaryPassword: values.salaryPassword || undefined
     } as UserProfile;
-    setUser(updatedUser);
-    localStorage.setItem('expense-tracker-user', JSON.stringify(updatedUser));
+    updateUserProfile(updatedUser);
     toast({
       title: 'Settings saved!',
       description: 'Your profile has been updated.',
     });
   }
+
+  function onCategorySubmit(values: CategoryFormValues) {
+    if (!user) return;
+    const newCategory: CustomCategory = {
+      id: crypto.randomUUID(),
+      ...values,
+    };
+    const updatedCategories = [...(user.customCategories || []), newCategory];
+    updateUserProfile({ ...user, customCategories: updatedCategories });
+    toast({
+      title: "Category Added",
+      description: `"${newCategory.name}" has been added.`,
+    });
+    categoryForm.reset();
+    setCategoryDialogOpen(false);
+  }
+
+  const deleteCategory = (id: string) => {
+    if (!user) return;
+    const updatedCategories = (user.customCategories || []).filter(cat => cat.id !== id);
+    updateUserProfile({ ...user, customCategories: updatedCategories });
+    toast({
+      title: "Category Deleted",
+      variant: "destructive"
+    });
+  };
 
   const handleResetData = () => {
     localStorage.removeItem('expense-tracker-user');
@@ -95,12 +152,10 @@ export default function SettingsPage() {
         title: 'Data Reset',
         description: 'All your application data has been cleared.',
     });
-    // Redirect to home which will trigger onboarding
     window.location.href = '/';
   }
   
   if (!isClient || !user) {
-    // You can add a skeleton loader here
     return <div>Loading...</div>
   }
 
@@ -119,10 +174,10 @@ export default function SettingsPage() {
                 <CardDescription>Manage your profile and application settings.</CardDescription>
               </CardHeader>
               <CardContent>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <Form {...profileForm}>
+                  <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
                     <FormField
-                      control={form.control}
+                      control={profileForm.control}
                       name="name"
                       render={({ field }) => (
                         <FormItem>
@@ -136,7 +191,7 @@ export default function SettingsPage() {
                     />
                      <div className="grid grid-cols-2 gap-4">
                         <FormField
-                          control={form.control}
+                          control={profileForm.control}
                           name="monthlyBudget"
                           render={({ field }) => (
                             <FormItem>
@@ -149,7 +204,7 @@ export default function SettingsPage() {
                           )}
                         />
                         <FormField
-                          control={form.control}
+                          control={profileForm.control}
                           name="currency"
                           render={({ field }) => (
                             <FormItem>
@@ -177,7 +232,7 @@ export default function SettingsPage() {
                     <CardTitle className="text-lg">Salary Settings</CardTitle>
                      <div className="grid grid-cols-2 gap-4">
                         <FormField
-                          control={form.control}
+                          control={profileForm.control}
                           name="salary"
                           render={({ field }) => (
                             <FormItem>
@@ -190,7 +245,7 @@ export default function SettingsPage() {
                           )}
                         />
                         <FormField
-                          control={form.control}
+                          control={profileForm.control}
                           name="salaryPassword"
                           render={({ field }) => (
                             <FormItem>
@@ -206,6 +261,96 @@ export default function SettingsPage() {
                     <Button type="submit">Save Changes</Button>
                   </form>
                 </Form>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Custom Categories</CardTitle>
+                <CardDescription>Create and manage your own spending categories.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  {(user.customCategories || []).map(cat => (
+                    <div key={cat.id} className="flex items-center justify-between p-2 rounded-md border">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">{cat.emoji}</span>
+                          <span style={{
+                              '--color': cat.color,
+                              'backgroundColor': `${cat.color}20`,
+                              'color': cat.color,
+                            } as React.CSSProperties} className="font-semibold text-[var(--color)] bg-[var(--bg)] px-2 py-0.5 rounded-full text-sm">
+                            {cat.name}
+                          </span>
+                        </div>
+                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8" onClick={() => deleteCategory(cat.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                  ))}
+                  {(user.customCategories?.length || 0) === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No custom categories yet.</p>
+                  )}
+                </div>
+                <Dialog open={isCategoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <PlusCircle className="mr-2" /> Add Category
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add a New Category</DialogTitle>
+                    </DialogHeader>
+                    <Form {...categoryForm}>
+                      <form onSubmit={categoryForm.handleSubmit(onCategorySubmit)} className="space-y-4">
+                        <FormField
+                          control={categoryForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Category Name</FormLabel>
+                              <FormControl><Input placeholder="e.g., Subscriptions" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={categoryForm.control}
+                          name="emoji"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Emoji</FormLabel>
+                              <FormControl><Input placeholder="e.g., 💖" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={categoryForm.control}
+                          name="color"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Color</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <Input placeholder="#A855F7" {...field} className="pl-12"/>
+                                  <Input type="color" className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 p-1 bg-transparent border-none" value={field.value} onChange={field.onChange} />
+                                </div>
+                              </FormControl>
+                              <FormDescription>Choose a color for your category.</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <DialogFooter>
+                          <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                          <Button type="submit">Add Category</Button>
+                        </DialogFooter>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
 

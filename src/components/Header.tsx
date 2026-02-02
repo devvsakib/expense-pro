@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Settings, LayoutGrid } from "lucide-react";
+import { Settings, LayoutGrid, Wallet } from "lucide-react";
 import { CompassIcon } from "./icons";
 import Link from "next/link";
 
@@ -14,6 +14,12 @@ export default function Header() {
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-end space-x-2">
+           <Link href="/">
+            <Button variant="ghost" size="icon" title="Expense Tracker">
+              <Wallet className="h-4 w-4" />
+              <span className="sr-only">Expense Tracker</span>
+            </Button>
+          </Link>
            <Link href="/planner">
             <Button variant="ghost" size="icon" title="Task Planner">
               <LayoutGrid className="h-4 w-4" />

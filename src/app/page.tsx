@@ -226,7 +226,7 @@ export default function Home() {
         onClose={handleCloseForm}
         onSubmit={handleSaveExpense}
         expense={editingExpense}
-        currency={user.currency}
+        user={user}
       />
 
       <Dialog open={isReportDialogOpen} onOpenChange={setReportDialogOpen}>
@@ -267,7 +267,7 @@ export default function Home() {
 
             <div className="grid md:grid-cols-2 gap-6 mt-8">
               <SpendingChart expenses={filteredExpenses} currency={user.currency} />
-              <CategoryPieChart expenses={filteredExpenses} currency={user.currency} />
+              <CategoryPieChart expenses={filteredExpenses} currency={user.currency} customCategories={user.customCategories || []} />
             </div>
 
             <div className="mt-8">
@@ -332,7 +332,7 @@ export default function Home() {
                 expenses={filteredExpenses}
                 onDelete={handleDeleteExpense}
                 onEdit={handleOpenForm}
-                currency={user.currency}
+                user={user}
               />
             </div>
           </div>

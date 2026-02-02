@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { PieChart, Pie, Cell } from "recharts";
-import type { Expense } from "@/app/types";
+import type { Expense, CustomCategory } from "@/app/types";
 import {
   Card,
   CardContent,
@@ -23,9 +23,10 @@ import { getCurrencySymbol } from "@/lib/utils";
 interface CategoryPieChartProps {
   expenses: Expense[];
   currency: string;
+  customCategories: CustomCategory[];
 }
 
-export default function CategoryPieChart({ expenses, currency }: CategoryPieChartProps) {
+export default function CategoryPieChart({ expenses, currency, customCategories }: CategoryPieChartProps) {
   const currencySymbol = getCurrencySymbol(currency);
   const {data: categoryData, config: chartConfig } = useMemo(() => {
     const dataMap: { [key in string]?: number } = {};
@@ -39,14 +40,20 @@ export default function CategoryPieChart({ expenses, currency }: CategoryPieChar
       
     const config: ChartConfig = {};
     data.forEach((item, index) => {
+        const custom = customCategories?.find(c => c.name === item.name);
         config[item.name] = {
-            label: item.name,
-            color: `hsl(var(--chart-${(index % 5) + 1}))`
+            label: (
+              <div className="flex items-center gap-1.5">
+                {custom?.emoji && <span className="text-sm">{custom.emoji}</span>}
+                <span>{item.name}</span>
+              </div>
+            ),
+            color: custom?.color || `hsl(var(--chart-${(index % 5) + 1}))`
         };
     });
 
     return { data, config };
-  }, [expenses]);
+  }, [expenses, customCategories]);
 
 
   if (categoryData.length === 0) {
