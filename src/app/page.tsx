@@ -3,13 +3,15 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Expense, ExpenseStatus, UserProfile } from "@/app/types";
 import { format, startOfWeek, startOfMonth, startOfYear, isAfter } from "date-fns";
+import { unparse } from "papaparse";
+import { useToast } from "@/hooks/use-toast";
 
 import Header from "@/components/Header";
 import ExpenseList from "@/components/ExpenseList";
 import ExpenseSummary from "@/components/ExpenseSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, Sparkles, Loader2 } from "lucide-react";
+import { PlusCircle, Search, Sparkles, Loader2, Download } from "lucide-react";
 import ExpenseForm from "@/components/ExpenseForm";
 import { Input } from "@/components/ui/input";
 import {
@@ -49,6 +51,7 @@ export default function Home() {
   const [isReportDialogOpen, setReportDialogOpen] = useState(false);
   const [aiReport, setAiReport] = useState("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const { toast } = useToast();
 
   // Load state from localStorage
   useEffect(() => {
@@ -180,6 +183,48 @@ export default function Home() {
       );
     } finally {
       setIsGeneratingReport(false);
+    }
+  };
+  
+  const handleDownloadCSV = () => {
+    if (!user || filteredExpenses.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "No expenses to export",
+        description: "There are no expenses in the current view to export.",
+      });
+      return;
+    }
+
+    const dataToExport = filteredExpenses.map(e => ({
+      ID: e.id,
+      Title: e.title,
+      Amount: e.amount,
+      Currency: user.currency,
+      Date: format(e.date, "yyyy-MM-dd"),
+      Category: e.category,
+      Status: e.status,
+      Recurrence: e.recurrence,
+      Notes: e.notes || "",
+    }));
+
+    const csv = unparse(dataToExport);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      const date = format(new Date(), 'yyyy-MM-dd');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `xpns-report-${date}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+       toast({
+        title: "Download Started",
+        description: "Your expense report is being downloaded.",
+      });
     }
   };
 
@@ -321,6 +366,9 @@ export default function Home() {
                   <div className="flex w-full flex-wrap sm:flex-nowrap sm:w-auto gap-2">
                     <Button onClick={handleGenerateReport} variant="outline" className="flex-1 sm:w-auto">
                       <Sparkles className="mr-2 h-4 w-4" /> AI Report
+                    </Button>
+                    <Button onClick={handleDownloadCSV} variant="outline" className="flex-1 sm:w-auto">
+                      <Download className="mr-2 h-4 w-4" /> Download CSV
                     </Button>
                     <Button onClick={() => handleOpenForm()} className="whitespace-nowrap flex-1 sm:w-auto">
                       <PlusCircle className="mr-2 h-4 w-4" /> Add Expense
