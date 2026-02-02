@@ -11,7 +11,7 @@ import ExpenseList from "@/components/ExpenseList";
 import ExpenseSummary from "@/components/ExpenseSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, FileText } from "lucide-react";
+import { PlusCircle, Search, FileText, LayoutDashboard } from "lucide-react";
 import ExpenseForm from "@/components/ExpenseForm";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,6 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import SpendingChart from "@/components/SpendingChart";
 import CategoryPieChart from "@/components/CategoryPieChart";
 import Onboarding from "@/components/Onboarding";
@@ -178,6 +183,15 @@ export default function Home() {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
+  const sidebarContent = (
+    <div className="space-y-6">
+        <ExpenseSummary user={user} expenses={filteredExpenses} />
+        <CategoryBudgets user={user} expenses={filteredExpenses} />
+        <SpendingChart expenses={filteredExpenses} currency={user.currency} />
+        <CategoryPieChart expenses={filteredExpenses} currency={user.currency} customCategories={user.customCategories || []} />
+    </div>
+  );
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <Header />
@@ -208,6 +222,16 @@ export default function Home() {
                           <FileText className="mr-2 h-4 w-4" /> View Reports
                       </Link>
                     </Button>
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" className="w-full sm:w-auto md:hidden">
+                                <LayoutDashboard className="mr-2 h-4 w-4" /> View Summary
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent className="w-[90vw] max-w-sm overflow-y-auto p-0">
+                            <div className="p-6">{sidebarContent}</div>
+                        </SheetContent>
+                    </Sheet>
                     <Button onClick={() => handleOpenForm()} className="whitespace-nowrap w-full sm:w-auto">
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Expense
                     </Button>
@@ -277,12 +301,7 @@ export default function Home() {
 
                 {/* Sidebar */}
                 <div className="hidden md:block md:col-span-1 xl:col-span-1 h-full overflow-y-auto no-scrollbar">
-                    <div className="space-y-6">
-                        <ExpenseSummary user={user} expenses={filteredExpenses} />
-                        <CategoryBudgets user={user} expenses={filteredExpenses} />
-                        <SpendingChart expenses={filteredExpenses} currency={user.currency} />
-                        <CategoryPieChart expenses={filteredExpenses} currency={user.currency} customCategories={user.customCategories || []} />
-                    </div>
+                    {sidebarContent}
                 </div>
             </div>
         </div>
