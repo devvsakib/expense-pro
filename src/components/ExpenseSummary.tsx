@@ -39,17 +39,19 @@ export default function ExpenseSummary({ user, expenses }: BudgetOverviewProps) 
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Spent so far</CardTitle>
+          <CardTitle className="text-sm font-medium">Spent (Selected Period)</CardTitle>
           <CreditCard className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{currencySymbol}{spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-          <Progress value={progressPercentage} className="mt-2 h-2" />
+           <p className="text-xs text-muted-foreground">
+            {progressPercentage.toFixed(0)}% of your monthly budget
+          </p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Remaining</CardTitle>
+          <CardTitle className="text-sm font-medium">Remaining (from Budget)</CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -57,7 +59,7 @@ export default function ExpenseSummary({ user, expenses }: BudgetOverviewProps) 
             {currencySymbol}{remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2})}
           </div>
           <p className="text-xs text-muted-foreground">
-            {remaining < 0 ? 'You are over budget' : 'Left in your budget'}
+            {remaining < 0 ? 'You are over budget' : 'Left in your monthly budget'}
           </p>
         </CardContent>
       </Card>

@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import type { Expense, ExpenseStatus, UserProfile } from "@/app/types";
+import { format, startOfWeek, startOfMonth, startOfYear, isAfter } from "date-fns";
 
 import Header from "@/components/Header";
 import ExpenseList from "@/components/ExpenseList";
 import ExpenseSummary from "@/components/ExpenseSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search } from "lucide-react";
+import { PlusCircle, Search, Sparkles, Loader2 } from "lucide-react";
 import ExpenseForm from "@/components/ExpenseForm";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,9 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import SpendingChart from "@/components/SpendingChart";
 import CategoryPieChart from "@/components/CategoryPieChart";
 import Onboarding from "@/components/Onboarding";
+import { generateReport } from "@/ai/flows/ai-generate-report";
+
 
 export default function Home() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -32,6 +42,13 @@ export default function Home() {
   const [statusFilter, setStatusFilter] = useState<"all" | ExpenseStatus>(
     "all"
   );
+  const [dateFilter, setDateFilter] = useState<
+    "all" | "week" | "month" | "year"
+  >("all");
+  
+  const [isReportDialogOpen, setReportDialogOpen] = useState(false);
+  const [aiReport, setAiReport] = useState("");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   // Load state from localStorage
   useEffect(() => {
@@ -109,14 +126,63 @@ export default function Home() {
   };
   
   const filteredExpenses = useMemo(() => {
+    const now = new Date();
     return expenses
+      .filter((expense) => {
+        if (dateFilter === "all") return true;
+        const expenseDate = expense.date;
+        if (dateFilter === "week") {
+          return isAfter(expenseDate, startOfWeek(now));
+        }
+        if (dateFilter === "month") {
+          return isAfter(expenseDate, startOfMonth(now));
+        }
+        if (dateFilter === "year") {
+          return isAfter(expenseDate, startOfYear(now));
+        }
+        return true;
+      })
       .filter((expense) =>
         expense.title.toLowerCase().includes(searchQuery.toLowerCase())
       )
       .filter(
         (expense) => statusFilter === "all" || expense.status === statusFilter
       );
-  }, [expenses, searchQuery, statusFilter]);
+  }, [expenses, searchQuery, statusFilter, dateFilter]);
+  
+  const handleGenerateReport = async () => {
+    if (!user) return;
+    setIsGeneratingReport(true);
+    setAiReport("");
+    setReportDialogOpen(true);
+
+    const reportInput = {
+      user: {
+        name: user.name,
+        monthlyBudget: user.monthlyBudget,
+        currency: user.currency,
+      },
+      expenses: filteredExpenses.map((e) => ({
+        title: e.title,
+        amount: e.amount,
+        category: e.category,
+        date: format(e.date, "yyyy-MM-dd"),
+      })),
+    };
+
+    try {
+      const result = await generateReport(reportInput);
+      setAiReport(result.report);
+    } catch (error) {
+      console.error("Failed to generate report", error);
+      setAiReport(
+        "Sorry, I couldn't generate the report at this time. Please try again later."
+      );
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
 
   if (!isClient) {
     return (
@@ -162,6 +228,30 @@ export default function Home() {
         expense={editingExpense}
         currency={user.currency}
       />
+
+      <Dialog open={isReportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="text-primary h-5 w-5" />
+              Your AI Spending Report
+            </DialogTitle>
+            <DialogDescription>
+              Here's an analysis of your spending for the selected period.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 max-h-[60vh] overflow-y-auto">
+            {isGeneratingReport ? (
+              <div className="flex items-center justify-center flex-col gap-4 text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <p className="text-muted-foreground">Generating your report... <br/>This might take a moment.</p>
+              </div>
+            ) : (
+              <div className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: aiReport.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />') }} />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <main className="flex-1">
         <div className="container mx-auto py-8 px-4">
@@ -170,14 +260,14 @@ export default function Home() {
               Welcome back, {user.name}!
             </h1>
             <p className="text-muted-foreground mb-8">
-              Here's your financial overview for this month.
+              Here's your financial overview.
             </p>
 
-            <ExpenseSummary user={user} expenses={expenses} />
+            <ExpenseSummary user={user} expenses={filteredExpenses} />
 
             <div className="grid md:grid-cols-2 gap-6 mt-8">
-              <SpendingChart expenses={expenses} currency={user.currency} />
-              <CategoryPieChart expenses={expenses} currency={user.currency} />
+              <SpendingChart expenses={filteredExpenses} currency={user.currency} />
+              <CategoryPieChart expenses={filteredExpenses} currency={user.currency} />
             </div>
 
             <div className="mt-8">
@@ -185,23 +275,39 @@ export default function Home() {
                 <h2 className="text-2xl font-bold tracking-tight">
                   Your Expenses
                 </h2>
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                  <div className="relative w-full md:w-64">
+                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                  <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="Search expenses..."
-                      className="pl-9"
+                      className="pl-9 w-full"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
+                  <Select
+                    onValueChange={(value: "all" | "week" | "month" | "year") =>
+                      setDateFilter(value as any)
+                    }
+                    defaultValue="all"
+                  >
+                    <SelectTrigger className="w-full sm:w-[160px]">
+                      <SelectValue placeholder="Filter by date" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Time</SelectItem>
+                      <SelectItem value="week">This Week</SelectItem>
+                      <SelectItem value="month">This Month</SelectItem>
+                      <SelectItem value="year">This Year</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Select
                     onValueChange={(value: "all" | ExpenseStatus) =>
                       setStatusFilter(value)
                     }
                     defaultValue="all"
                   >
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[160px]">
                       <SelectValue placeholder="Filter by status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -212,9 +318,14 @@ export default function Home() {
                     </SelectContent>
                   </Select>
 
-                  <Button onClick={() => handleOpenForm()} className="whitespace-nowrap">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Expense
-                  </Button>
+                  <div className="flex w-full sm:w-auto gap-2">
+                    <Button onClick={handleGenerateReport} variant="outline" className="w-1/2 sm:w-auto">
+                      <Sparkles className="mr-2 h-4 w-4" /> AI Report
+                    </Button>
+                    <Button onClick={() => handleOpenForm()} className="whitespace-nowrap w-1/2 sm:w-auto">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Add Expense
+                    </Button>
+                  </div>
                 </div>
               </div>
               <ExpenseList

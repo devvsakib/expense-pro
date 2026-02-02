@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Bar, BarChart, XAxis, YAxis } from "recharts";
-import { subDays, format, startOfDay } from "date-fns";
+import { subDays, format, startOfDay, isWithinInterval, startOfToday } from "date-fns";
 import type { Expense } from "@/app/types";
 import {
   Card,
@@ -27,17 +27,24 @@ interface SpendingChartProps {
 export default function SpendingChart({ expenses, currency }: SpendingChartProps) {
   const currencySymbol = getCurrencySymbol(currency);
   const spendingData = useMemo(() => {
-    const last7Days = Array.from({ length: 7 }, (_, i) => subDays(startOfDay(new Date()), i)).reverse();
+    const today = startOfToday();
+    const last7DaysInterval = {
+      start: subDays(today, 6),
+      end: today,
+    };
 
-    const dailySpending = last7Days.map(day => {
-      const total = expenses
+    const relevantExpenses = expenses.filter(e => isWithinInterval(e.date, last7DaysInterval));
+    
+    const dailySpending = Array.from({ length: 7 }, (_, i) => {
+      const day = subDays(today, i);
+      const total = relevantExpenses
         .filter(expense => startOfDay(new Date(expense.date)).getTime() === day.getTime())
         .reduce((acc, expense) => acc + expense.amount, 0);
       return {
         date: format(day, "eee"), // Short day name like "Mon"
         total,
       };
-    });
+    }).reverse();
     
     return dailySpending;
   }, [expenses]);
@@ -75,7 +82,11 @@ export default function SpendingChart({ expenses, currency }: SpendingChartProps
             />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent indicator="dot" hideLabel />}
+              content={<ChartTooltipContent 
+                indicator="dot" 
+                hideLabel
+                formatter={(value, name, props) => [`${currencySymbol}${(value as number).toLocaleString()}`, 'Spent']}
+              />}
             />
             <Bar dataKey="total" fill="var(--color-total)" radius={8} />
           </BarChart>
