@@ -259,7 +259,7 @@ export default function Home() {
       
       <main className="flex-1">
         <div className="container mx-auto py-8 px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:items-start">
                 {/* Main Content */}
                 <div className="lg:col-span-2 xl:col-span-3 space-y-8">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -340,7 +340,7 @@ export default function Home() {
                 </div>
 
                 {/* Sidebar */}
-                <div className="lg:col-span-1 xl:col-span-1 space-y-6">
+                <div className="lg:col-span-1 xl:col-span-1 space-y-6 lg:sticky top-24">
                     <ExpenseSummary user={user} expenses={filteredExpenses} />
                     <CategoryBudgets user={user} expenses={filteredExpenses} />
                     <SpendingChart expenses={filteredExpenses} currency={user.currency} />
