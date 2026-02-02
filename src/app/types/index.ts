@@ -1,3 +1,4 @@
+
 export const expenseCategories = [
   "Food",
   "Transport",
@@ -46,6 +47,10 @@ export const currencyOptions = [
 
 export type Currency = typeof currencyOptions[number]['value'];
 
+export type CategoryBudget = {
+    category: string;
+    amount: number;
+};
 
 export type UserProfile = {
   name: string;
@@ -54,6 +59,7 @@ export type UserProfile = {
   salary?: number;
   salaryPassword?: string;
   customCategories?: CustomCategory[];
+  categoryBudgets?: CategoryBudget[];
 };
 
 export const importanceLevels = ["high", "medium", "low"] as const;

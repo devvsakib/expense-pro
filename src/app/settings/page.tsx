@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,12 +17,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { UserProfile, Currency, CustomCategory, Expense } from '@/app/types';
-import { currencyOptions } from '@/app/types';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { UserProfile, Currency, CustomCategory, Expense, CategoryBudget } from '@/app/types';
+import { currencyOptions, expenseCategories } from '@/app/types';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download, Target } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   AlertDialog,
@@ -70,14 +71,21 @@ const categoryFormSchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, { message: "Must be a valid hex color." }),
 });
 
+const categoryBudgetFormSchema = z.object({
+    category: z.string().min(1, { message: "Please select a category." }),
+    amount: z.coerce.number().positive({ message: "Budget must be a positive number." }),
+});
+
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type CategoryFormValues = z.infer<typeof categoryFormSchema>;
+type CategoryBudgetFormValues = z.infer<typeof categoryBudgetFormSchema>;
 
 export default function SettingsPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isCategoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [isBudgetDialogOpen, setBudgetDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const profileForm = useForm<ProfileFormValues>({
@@ -90,6 +98,14 @@ export default function SettingsPage() {
       name: '',
       emoji: '💡',
       color: '#A855F7',
+    }
+  });
+
+  const budgetForm = useForm<CategoryBudgetFormValues>({
+    resolver: zodResolver(categoryBudgetFormSchema),
+    defaultValues: {
+        category: '',
+        amount: undefined,
     }
   });
   
@@ -165,6 +181,35 @@ export default function SettingsPage() {
       variant: "destructive"
     });
   };
+
+  function onBudgetSubmit(values: CategoryBudgetFormValues) {
+    if (!user) return;
+    const newBudget: CategoryBudget = {
+        category: values.category,
+        amount: values.amount,
+    };
+    // Avoid duplicate budgets for the same category
+    const otherBudgets = (user.categoryBudgets || []).filter(b => b.category !== values.category);
+    const updatedBudgets = [...otherBudgets, newBudget];
+    updateUserProfile({ ...user, categoryBudgets: updatedBudgets });
+    toast({
+      title: "Category Budget Set",
+      description: `Budget for "${newBudget.category}" has been set.`,
+    });
+    budgetForm.reset();
+    setBudgetDialogOpen(false);
+  }
+
+  const deleteCategoryBudget = (categoryName: string) => {
+    if (!user) return;
+    const updatedBudgets = (user.categoryBudgets || []).filter(b => b.category !== categoryName);
+    updateUserProfile({ ...user, categoryBudgets: updatedBudgets });
+    toast({
+      title: "Category Budget Deleted",
+      variant: "destructive"
+    });
+  };
+
 
   const handleResetData = () => {
     localStorage.removeItem('expense-tracker-user');
@@ -278,6 +323,13 @@ export default function SettingsPage() {
     return <div>Loading...</div>
   }
 
+  const allCategories = [
+    ...expenseCategories,
+    ...(user.customCategories || []).map(c => c.name)
+  ].sort();
+  const currencySymbol = getCurrencySymbol(user.currency);
+
+
   return (
     <>
       <Header />
@@ -383,6 +435,103 @@ export default function SettingsPage() {
                 </Form>
               </CardContent>
             </Card>
+
+             <Card>
+              <CardHeader>
+                <CardTitle>Category Budgets</CardTitle>
+                <CardDescription>Set spending limits for specific categories.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  {(user.categoryBudgets || []).map(budget => (
+                    <div key={budget.category} className="flex items-center justify-between p-2 rounded-md border">
+                        <div className="flex items-center gap-3">
+                           <Target className="w-4 h-4 text-muted-foreground"/>
+                           <span className="font-medium">{budget.category}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <span className="text-sm text-muted-foreground">
+                                {currencySymbol}{budget.amount.toLocaleString()} / month
+                            </span>
+                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive h-8 w-8" onClick={() => deleteCategoryBudget(budget.category)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                  ))}
+                  {(user.categoryBudgets?.length || 0) === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No category budgets set yet.</p>
+                  )}
+                </div>
+                <Dialog open={isBudgetDialogOpen} onOpenChange={setBudgetDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="w-full">
+                      <PlusCircle className="mr-2" /> Add Budget
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add a New Category Budget</DialogTitle>
+                    </DialogHeader>
+                    <Form {...budgetForm}>
+                      <form onSubmit={budgetForm.handleSubmit(onBudgetSubmit)} className="space-y-4">
+                         <FormField
+                          control={budgetForm.control}
+                          name="category"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Category</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a category" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {allCategories.map((cat) => (
+                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={budgetForm.control}
+                          name="amount"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Budget Amount</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+                                    {currencySymbol}
+                                    </span>
+                                    <Input
+                                    type="number"
+                                    placeholder="e.g., 500"
+                                    className="pl-8"
+                                    {...field}
+                                    value={field.value ?? ""}
+                                    />
+                                </div>
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <DialogFooter>
+                          <DialogClose asChild><Button type="button" variant="ghost">Cancel</Button></DialogClose>
+                          <Button type="submit">Set Budget</Button>
+                        </DialogFooter>
+                      </form>
+                    </Form>
+                  </DialogContent>
+                </Dialog>
+              </CardContent>
+            </Card>
+
 
             <Card>
               <CardHeader>

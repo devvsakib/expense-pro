@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -31,6 +32,7 @@ import SpendingChart from "@/components/SpendingChart";
 import CategoryPieChart from "@/components/CategoryPieChart";
 import Onboarding from "@/components/Onboarding";
 import { generateReport } from "@/ai/flows/ai-generate-report";
+import CategoryBudgets from "@/components/CategoryBudgets";
 
 
 export default function Home() {
@@ -267,6 +269,10 @@ export default function Home() {
 
             <ExpenseSummary user={user} expenses={filteredExpenses} />
 
+            <div className="mt-8">
+              <CategoryBudgets user={user} expenses={filteredExpenses} />
+            </div>
+            
             <div className="grid md:grid-cols-2 gap-6 mt-8">
               <SpendingChart expenses={filteredExpenses} currency={user.currency} />
               <CategoryPieChart expenses={filteredExpenses} currency={user.currency} customCategories={user.customCategories || []} />
