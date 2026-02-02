@@ -22,7 +22,7 @@ import type { UserProfile, Currency, CustomCategory, Expense, CategoryBudget } f
 import { currencyOptions, expenseCategories } from '@/app/types';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download, Target } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download, Target, Bot } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   AlertDialog,
@@ -51,6 +51,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { getCurrencySymbol } from '@/lib/utils';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
+import { Switch } from '@/components/ui/switch';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -60,6 +61,7 @@ const profileFormSchema = z.object({
   salaryPassword: z.string().optional().refine(val => val === '' || val === undefined || val.length >= 4, {
         message: "Password must be at least 4 characters.",
     }),
+  useMockAI: z.boolean().optional(),
 }).refine(data => (data.salary && data.salary > 0) ? !!data.salaryPassword : true, {
     message: "A password is required if you set a salary.",
     path: ["salaryPassword"],
@@ -120,6 +122,7 @@ export default function SettingsPage() {
               ...parsedUser,
               salary: parsedUser.salary || '',
               salaryPassword: parsedUser.salaryPassword || '',
+              useMockAI: parsedUser.useMockAI || false,
           });
         }
         const storedExpenses = localStorage.getItem('expense-tracker-expenses');
@@ -532,7 +535,6 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-
             <Card>
               <CardHeader>
                 <CardTitle>Custom Categories</CardTitle>
@@ -638,6 +640,45 @@ export default function SettingsPage() {
                 <Button variant="outline" className="flex-1" onClick={() => handleExport('pdf')}>
                     <Download className="mr-2"/> Export as PDF
                 </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                  <CardTitle>Developer Settings</CardTitle>
+                  <CardDescription>Control AI features and other development options.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <Form {...profileForm}>
+                      <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
+                           <FormField
+                              control={profileForm.control}
+                              name="useMockAI"
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                  <div className="space-y-0.5">
+                                    <FormLabel className="text-base flex items-center gap-2">
+                                        <Bot /> Use Mock AI for Receipt Scanning
+                                    </FormLabel>
+                                    <FormDescription>
+                                      Enable this to use simulated AI responses instead of real ones.
+                                    </FormDescription>
+                                  </div>
+                                  <FormControl>
+                                    <Switch
+                                      checked={field.value}
+                                      onCheckedChange={(checked) => {
+                                          field.onChange(checked);
+                                          // Immediately submit the form on change
+                                          profileForm.handleSubmit(onProfileSubmit)();
+                                      }}
+                                    />
+                                  </FormControl>
+                                </FormItem>
+                              )}
+                            />
+                      </form>
+                  </Form>
               </CardContent>
             </Card>
 

@@ -60,6 +60,7 @@ export type UserProfile = {
   salaryPassword?: string;
   customCategories?: CustomCategory[];
   categoryBudgets?: CategoryBudget[];
+  useMockAI?: boolean;
 };
 
 export const importanceLevels = ["high", "medium", "low"] as const;

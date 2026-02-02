@@ -205,7 +205,11 @@ export default function ExpenseForm({
         ];
 
         try {
-            const result = await scanReceipt({ photoDataUri: dataUri, categories: allCategories });
+            const result = await scanReceipt({ 
+              photoDataUri: dataUri, 
+              categories: allCategories,
+              useMockAI: user.useMockAI || false
+            });
             
             form.setValue('title', result.title);
             form.setValue('amount', result.amount);

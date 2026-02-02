@@ -14,10 +14,12 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { format } from 'date-fns';
 
 const ReceiptScanInputSchema = z.object({
   photoDataUri: z.string().describe("A photo of a receipt, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
   categories: z.array(z.string()).describe("A list of possible expense categories."),
+  useMockAI: z.boolean().optional().describe("If true, use the mock AI instead of the real one."),
 });
 export type ReceiptScanInput = z.infer<typeof ReceiptScanInputSchema>;
 
@@ -60,6 +62,18 @@ const scanReceiptFlow = ai.defineFlow(
     outputSchema: ReceiptScanOutputSchema,
   },
   async input => {
+    if (input.useMockAI) {
+      // Simulate network delay for mock response
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return {
+        title: 'Mock Supermarket',
+        amount: 35.78,
+        date: format(new Date(), 'yyyy-MM-dd'),
+        category: 'Food',
+        notes: 'Mock items: Milk, Bread, Eggs',
+      };
+    }
+    
     // This is the real implementation that calls the AI model.
     const {output} = await scanReceiptPrompt(input);
     return output!;
