@@ -49,6 +49,7 @@ import { unparse } from 'papaparse';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { getCurrencySymbol } from '@/lib/utils';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -286,6 +287,7 @@ export default function SettingsPage() {
             Back to Dashboard
         </Link>
         <div className="space-y-8">
+            <ThemeSwitcher />
             <Card>
               <CardHeader>
                 <CardTitle>Profile Settings</CardTitle>
