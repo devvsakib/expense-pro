@@ -107,3 +107,8 @@ export type SavingsGoal = {
   plan: string; // The AI generated plan in Markdown
   createdAt: string;
 };
+
+export type ChatMessage = {
+  role: 'user' | 'assistant';
+  content: string;
+};

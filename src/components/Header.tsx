@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Settings, LayoutGrid, Wallet, PiggyBank, Repeat, CalendarDays } from "lucide-react";
+import { Settings, LayoutGrid, Wallet, PiggyBank, Repeat, CalendarDays, MessageCircle } from "lucide-react";
 import { CompassIcon } from "./icons";
 import Link from "next/link";
 
@@ -43,6 +43,12 @@ export default function Header() {
             <Button variant="ghost" size="icon" title="Calendar">
               <CalendarDays className="h-4 w-4" />
               <span className="sr-only">Calendar</span>
+            </Button>
+          </Link>
+          <Link href="/chat">
+            <Button variant="ghost" size="icon" title="AI Chat">
+              <MessageCircle className="h-4 w-4" />
+              <span className="sr-only">AI Chat</span>
             </Button>
           </Link>
           <Link href="/settings">
