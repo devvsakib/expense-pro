@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Camera, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +50,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { scanReceipt } from "@/ai/flows/ai-receipt-scanner";
+import { useToast } from "@/hooks/use-toast";
+
 
 const formSchema = z.object({
   title: z.string().min(2, {
@@ -92,6 +95,10 @@ export default function ExpenseForm({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
   });
+  
+  const [isScanning, setIsScanning] = useState(false);
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -126,6 +133,63 @@ export default function ExpenseForm({
     }
   };
 
+  const handleReceiptScan = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsScanning(true);
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+        const dataUri = reader.result as string;
+        
+        const allCategories = [
+            ...expenseCategories,
+            ...(user.customCategories?.map(c => c.name) || [])
+        ];
+
+        try {
+            const result = await scanReceipt({ photoDataUri: dataUri, categories: allCategories });
+            
+            form.setValue('title', result.title);
+            form.setValue('amount', result.amount);
+            // The date from AI is YYYY-MM-DD, add T00:00:00 to avoid timezone issues
+            form.setValue('date', new Date(`${result.date}T00:00:00`));
+            
+            if (allCategories.includes(result.category)) {
+                form.setValue('category', result.category);
+            }
+
+            toast({
+                title: "Receipt Scanned!",
+                description: "Your form has been pre-filled with the receipt details."
+            });
+
+        } catch (error) {
+            console.error("Failed to scan receipt", error);
+            toast({
+                variant: "destructive",
+                title: "Scan Failed",
+                description: "Could not extract details from the receipt. Please enter them manually."
+            });
+        } finally {
+            setIsScanning(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
+        }
+    };
+    reader.onerror = (error) => {
+        console.error("Error reading file:", error);
+        setIsScanning(false);
+        toast({
+            variant: "destructive",
+            title: "File Error",
+            description: "Could not read the selected file."
+        });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-[600px]">
@@ -135,8 +199,38 @@ export default function ExpenseForm({
             Fill in the details of your expense. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="p-4 bg-secondary/50 rounded-lg border border-dashed">
+            <h3 className="text-sm font-medium mb-2">Have a receipt?</h3>
+            <p className="text-xs text-muted-foreground mb-3">
+                Upload an image of your receipt and let AI fill in the details for you.
+            </p>
+            <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleReceiptScan}
+                disabled={isScanning}
+            />
+            <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={isScanning}
+                onClick={() => fileInputRef.current?.click()}
+            >
+                {isScanning ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Scanning...</>
+                ) : (
+                    <><Camera className="mr-2 h-4 w-4" /> Scan Receipt</>
+                )}
+            </Button>
+        </div>
+
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 pt-4">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="title"
