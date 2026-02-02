@@ -13,6 +13,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -21,6 +22,7 @@ import type { UserProfile, Currency } from "@/app/types";
 import { currencyOptions } from "@/app/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { CompassIcon } from "@/components/icons";
+import { Separator } from "./ui/separator";
 
 const step1Schema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -33,6 +35,7 @@ const step2Schema = z.object({
     salaryPassword: z.string().optional().refine(val => val === '' || val === undefined || val.length >= 4, {
         message: "Password must be at least 4 characters.",
     }),
+    apiKey: z.string().optional(),
 }).refine(data => (data.salary && data.salary > 0) ? !!data.salaryPassword : true, {
     message: "Password is required if salary is provided.",
     path: ["salaryPassword"],
@@ -64,6 +67,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
     defaultValues: {
       salary: '',
       salaryPassword: "",
+      apiKey: "",
     },
   });
 
@@ -78,6 +82,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         ...values,
         salary: values.salary || undefined,
         salaryPassword: values.salaryPassword || undefined,
+        apiKey: values.apiKey || undefined,
         customCategories: [],
         defaultStatus: 'completed',
         defaultRecurrence: 'one-time',
@@ -225,6 +230,26 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                             />
                         </div>
                         <p className="text-xs text-muted-foreground text-center">Your salary information will be password-protected.</p>
+
+                        <Separator />
+
+                        <FormField
+                          control={formStep2.control}
+                          name="apiKey"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Google AI API Key (Optional)</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Enter your API key" {...field} value={field.value ?? ""} />
+                              </FormControl>
+                              <FormDescription>
+                                For AI features. You can get a key from Google AI Studio.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
                         <div className="flex gap-4">
                             <Button type="button" variant="outline" className="w-full" onClick={() => setStep(1)}>
                                 Back

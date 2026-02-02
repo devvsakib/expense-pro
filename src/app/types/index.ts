@@ -1,4 +1,3 @@
-
 export const expenseCategories = [
   "Food",
   "Transport",
@@ -63,6 +62,7 @@ export type UserProfile = {
   useMockAI?: boolean;
   defaultStatus?: ExpenseStatus;
   defaultRecurrence?: Recurrence;
+  apiKey?: string;
 };
 
 export const importanceLevels = ["high", "medium", "low"] as const;

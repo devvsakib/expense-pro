@@ -64,6 +64,7 @@ const profileFormSchema = z.object({
   useMockAI: z.boolean().optional(),
   defaultStatus: z.enum(expenseStatuses).optional(),
   defaultRecurrence: z.enum(recurrenceOptions).optional(),
+  apiKey: z.string().optional(),
 }).refine(data => (data.salary && data.salary > 0) ? !!data.salaryPassword : true, {
     message: "A password is required if you set a salary.",
     path: ["salaryPassword"],
@@ -127,6 +128,7 @@ export default function SettingsPage() {
               useMockAI: parsedUser.useMockAI || false,
               defaultStatus: parsedUser.defaultStatus || 'completed',
               defaultRecurrence: parsedUser.defaultRecurrence || 'one-time',
+              apiKey: parsedUser.apiKey || '',
           });
         }
         const storedExpenses = localStorage.getItem('expense-tracker-expenses');
@@ -154,12 +156,13 @@ export default function SettingsPage() {
         ...user, 
         ...values,
         salary: values.salary || undefined,
-        salaryPassword: values.salaryPassword || undefined
+        salaryPassword: values.salaryPassword || undefined,
+        apiKey: values.apiKey || undefined,
     } as UserProfile;
     updateUserProfile(updatedUser);
     toast({
       title: 'Settings saved!',
-      description: 'Your profile has been updated.',
+      description: 'Your settings have been updated.',
     });
   }
 
@@ -741,12 +744,28 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                  <CardTitle>Developer Settings</CardTitle>
-                  <CardDescription>Control AI features and other development options.</CardDescription>
+                  <CardTitle>AI &amp; Developer Settings</CardTitle>
+                  <CardDescription>Manage your AI API key and other development options.</CardDescription>
               </CardHeader>
               <CardContent>
                   <Form {...profileForm}>
-                      <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
+                      <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
+                           <FormField
+                              control={profileForm.control}
+                              name="apiKey"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Google AI API Key</FormLabel>
+                                  <FormControl>
+                                    <Input type="password" placeholder="Enter your API key" {...field} value={field.value ?? ""} />
+                                  </FormControl>
+                                  <FormDescription>
+                                    Your key is stored locally. Get one from Google AI Studio. It's optional.
+                                  </FormDescription>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
                            <FormField
                               control={profileForm.control}
                               name="useMockAI"
@@ -763,16 +782,13 @@ export default function SettingsPage() {
                                   <FormControl>
                                     <Switch
                                       checked={field.value}
-                                      onCheckedChange={(checked) => {
-                                          field.onChange(checked);
-                                          // Immediately submit the form on change
-                                          profileForm.handleSubmit(onProfileSubmit)();
-                                      }}
+                                      onCheckedChange={field.onChange}
                                     />
                                   </FormControl>
                                 </FormItem>
                               )}
                             />
+                          <Button type="submit">Save AI Settings</Button>
                       </form>
                   </Form>
               </CardContent>
