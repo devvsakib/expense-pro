@@ -89,3 +89,11 @@ export type TaskOutput = {
   }[];
   reasoning: string;
 };
+
+export type SavingsGoal = {
+  id: string;
+  name: string;
+  amount: number;
+  plan: string; // The AI generated plan in Markdown
+  createdAt: string;
+};

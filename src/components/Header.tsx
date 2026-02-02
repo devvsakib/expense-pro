@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Settings, LayoutGrid, Wallet } from "lucide-react";
+import { Settings, LayoutGrid, Wallet, PiggyBank } from "lucide-react";
 import { CompassIcon } from "./icons";
 import Link from "next/link";
 
@@ -24,6 +24,12 @@ export default function Header() {
             <Button variant="ghost" size="icon" title="Task Planner">
               <LayoutGrid className="h-4 w-4" />
               <span className="sr-only">Task Planner</span>
+            </Button>
+          </Link>
+          <Link href="/savings">
+            <Button variant="ghost" size="icon" title="Savings Goals">
+              <PiggyBank className="h-4 w-4" />
+              <span className="sr-only">Savings Goals</span>
             </Button>
           </Link>
           <Link href="/settings">

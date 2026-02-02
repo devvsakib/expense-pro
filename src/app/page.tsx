@@ -9,7 +9,7 @@ import ExpenseList from "@/components/ExpenseList";
 import ExpenseSummary from "@/components/ExpenseSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, Sparkles, Loader2, PiggyBank } from "lucide-react";
+import { PlusCircle, Search, Sparkles, Loader2 } from "lucide-react";
 import ExpenseForm from "@/components/ExpenseForm";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,7 +30,6 @@ import SpendingChart from "@/components/SpendingChart";
 import CategoryPieChart from "@/components/CategoryPieChart";
 import Onboarding from "@/components/Onboarding";
 import { generateReport } from "@/ai/flows/ai-generate-report";
-import SavingsCoachDialog from "@/components/SavingsCoachDialog";
 
 
 export default function Home() {
@@ -50,7 +49,6 @@ export default function Home() {
   const [isReportDialogOpen, setReportDialogOpen] = useState(false);
   const [aiReport, setAiReport] = useState("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [isSavingsCoachOpen, setSavingsCoachOpen] = useState(false);
 
   // Load state from localStorage
   useEffect(() => {
@@ -254,13 +252,6 @@ export default function Home() {
           </div>
         </DialogContent>
       </Dialog>
-
-      <SavingsCoachDialog
-        isOpen={isSavingsCoachOpen}
-        onOpenChange={setSavingsCoachOpen}
-        user={user}
-        expenses={filteredExpenses}
-      />
       
       <main className="flex-1">
         <div className="container mx-auto py-8 px-4">
@@ -330,9 +321,6 @@ export default function Home() {
                   <div className="flex w-full flex-wrap sm:flex-nowrap sm:w-auto gap-2">
                     <Button onClick={handleGenerateReport} variant="outline" className="flex-1 sm:w-auto">
                       <Sparkles className="mr-2 h-4 w-4" /> AI Report
-                    </Button>
-                    <Button onClick={() => setSavingsCoachOpen(true)} variant="outline" className="flex-1 sm:w-auto">
-                      <PiggyBank className="mr-2 h-4 w-4" /> AI Coach
                     </Button>
                     <Button onClick={() => handleOpenForm()} className="whitespace-nowrap flex-1 sm:w-auto">
                       <PlusCircle className="mr-2 h-4 w-4" /> Add Expense
