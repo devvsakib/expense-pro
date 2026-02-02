@@ -11,7 +11,7 @@ import ExpenseList from "@/components/ExpenseList";
 import ExpenseSummary from "@/components/ExpenseSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, Sparkles, Loader2 } from "lucide-react";
+import { PlusCircle, Search, FileText } from "lucide-react";
 import ExpenseForm from "@/components/ExpenseForm";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,18 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import SpendingChart from "@/components/SpendingChart";
 import CategoryPieChart from "@/components/CategoryPieChart";
 import Onboarding from "@/components/Onboarding";
-import { generateReport } from "@/ai/flows/ai-generate-report";
 import CategoryBudgets from "@/components/CategoryBudgets";
+import Link from "next/link";
 
 
 export default function Home() {
@@ -49,9 +42,6 @@ export default function Home() {
     "all" | "week" | "month" | "year"
   >("all");
   
-  const [isReportDialogOpen, setReportDialogOpen] = useState(false);
-  const [aiReport, setAiReport] = useState("");
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const { toast } = useToast();
 
   // Load state from localStorage
@@ -153,39 +143,6 @@ export default function Home() {
         (expense) => statusFilter === "all" || expense.status === statusFilter
       );
   }, [expenses, searchQuery, statusFilter, dateFilter]);
-  
-  const handleGenerateReport = async () => {
-    if (!user) return;
-    setIsGeneratingReport(true);
-    setAiReport("");
-    setReportDialogOpen(true);
-
-    const reportInput = {
-      user: {
-        name: user.name,
-        monthlyBudget: user.monthlyBudget,
-        currency: user.currency,
-      },
-      expenses: filteredExpenses.map((e) => ({
-        title: e.title,
-        amount: e.amount,
-        category: e.category,
-        date: format(e.date, "yyyy-MM-dd"),
-      })),
-    };
-
-    try {
-      const result = await generateReport(reportInput);
-      setAiReport(result.report);
-    } catch (error) {
-      console.error("Failed to generate report", error);
-      setAiReport(
-        "**AI Report Failed**\n\nSorry, I couldn't generate the report. This might be due to reaching a request limit. Please try again later."
-      );
-    } finally {
-      setIsGeneratingReport(false);
-    }
-  };
 
 
   if (!isClient) {
@@ -233,30 +190,6 @@ export default function Home() {
         user={user}
         expenses={expenses}
       />
-
-      <Dialog open={isReportDialogOpen} onOpenChange={setReportDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="text-primary h-5 w-5" />
-              Your AI Spending Report
-            </DialogTitle>
-            <DialogDescription>
-              Here's an analysis of your spending for the selected period.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4 max-h-[60vh] overflow-y-auto">
-            {isGeneratingReport ? (
-              <div className="flex items-center justify-center flex-col gap-4 text-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <p className="text-muted-foreground">Generating your report... <br/>This might take a moment.</p>
-              </div>
-            ) : (
-              <div className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: aiReport.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br />') }} />
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
       
       <main className="flex-1 overflow-hidden">
         <div className="container mx-auto h-full flex flex-col">
@@ -270,8 +203,10 @@ export default function Home() {
                 </p>
                 </div>
                 <div className="flex w-full md:w-auto shrink-0 gap-2">
-                    <Button onClick={handleGenerateReport} variant="outline" className="w-full sm:w-auto">
-                        <Sparkles className="mr-2 h-4 w-4" /> AI Report
+                    <Button asChild variant="outline" className="w-full sm:w-auto">
+                      <Link href="/reports">
+                          <FileText className="mr-2 h-4 w-4" /> View Reports
+                      </Link>
                     </Button>
                     <Button onClick={() => handleOpenForm()} className="whitespace-nowrap w-full sm:w-auto">
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Expense
