@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Camera, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Camera, Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,6 +52,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { scanReceipt } from "@/ai/flows/ai-receipt-scanner";
 import { useToast } from "@/hooks/use-toast";
+import { suggestCategory } from "@/ai/flows/ai-categorize-expense";
 
 
 const formSchema = z.object({
@@ -97,6 +98,8 @@ export default function ExpenseForm({
   });
   
   const [isScanning, setIsScanning] = useState(false);
+  const [isCategorizing, setIsCategorizing] = useState(false);
+  const [aiSuggestedCategory, setAiSuggestedCategory] = useState<string | null>(null);
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -120,8 +123,57 @@ export default function ExpenseForm({
           notes: "",
         });
       }
+      setAiSuggestedCategory(null);
     }
   }, [expense, form, isOpen]);
+
+  const titleValue = form.watch("title");
+  const categoryValue = form.watch("category");
+  const { dirtyFields } = form.formState;
+
+  // Debounced effect for AI categorization
+  useEffect(() => {
+    if (!titleValue) {
+        setAiSuggestedCategory(null);
+    }
+
+    if (dirtyFields.category) {
+        return;
+    }
+
+    const handler = setTimeout(async () => {
+        if (titleValue && titleValue.length > 3) {
+            setIsCategorizing(true);
+            setAiSuggestedCategory(null);
+            const allCategories = [
+                ...expenseCategories,
+                ...(user.customCategories?.map(c => c.name) || [])
+            ];
+
+            try {
+                const result = await suggestCategory({ title: titleValue, categories: allCategories });
+                if (allCategories.includes(result.category) && !form.formState.dirtyFields.category) {
+                    form.setValue('category', result.category);
+                    setAiSuggestedCategory(result.category);
+                }
+            } catch (error) {
+                console.error("Failed to suggest category", error);
+            } finally {
+                setIsCategorizing(false);
+            }
+        }
+    }, 800);
+
+    return () => {
+        clearTimeout(handler);
+    };
+  }, [titleValue, dirtyFields.category, form, user.customCategories]);
+  
+  useEffect(() => {
+    if (dirtyFields.category && categoryValue !== aiSuggestedCategory) {
+        setAiSuggestedCategory(null);
+    }
+  }, [categoryValue, dirtyFields.category, aiSuggestedCategory]);
 
   const handleSubmit = (values: FormValues) => {
     onSubmit(values);
@@ -157,7 +209,8 @@ export default function ExpenseForm({
             form.setValue('date', new Date(`${result.date}T00:00:00`));
             
             if (allCategories.includes(result.category)) {
-                form.setValue('category', result.category);
+                form.setValue('category', result.category, { shouldDirty: true });
+                setAiSuggestedCategory(result.category);
             }
 
             toast({
@@ -311,7 +364,18 @@ export default function ExpenseForm({
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Category</FormLabel>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <FormLabel>Category</FormLabel>
+                                {isCategorizing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                            </div>
+                            {aiSuggestedCategory === field.value && !isCategorizing && (
+                                <div className="flex items-center gap-1 text-xs text-primary animate-in fade-in-0">
+                                    <Sparkles className="h-3 w-3" />
+                                    <span>AI Suggested</span>
+                                </div>
+                            )}
+                        </div>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
