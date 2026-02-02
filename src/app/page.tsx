@@ -257,8 +257,8 @@ export default function Home() {
         </DialogContent>
       </Dialog>
       
-      <main className="flex-1">
-        <div className="container mx-auto px-4">
+      <main className="flex-1 overflow-hidden">
+        <div className="container mx-auto h-full">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 py-8">
                 <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-1">
@@ -278,19 +278,9 @@ export default function Home() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                {/* Sidebar - Appears on top on mobile, on the right on desktop */}
-                <div className="lg:col-span-1 xl:col-span-1 lg:order-last">
-                    <div className="lg:sticky lg:top-24 space-y-6">
-                        <ExpenseSummary user={user} expenses={filteredExpenses} />
-                        <CategoryBudgets user={user} expenses={filteredExpenses} />
-                        <SpendingChart expenses={filteredExpenses} currency={user.currency} />
-                        <CategoryPieChart expenses={filteredExpenses} currency={user.currency} customCategories={user.customCategories || []} />
-                    </div>
-                </div>
-                
+            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-8 h-[calc(100%-120px)]">
                 {/* Main Content */}
-                <div className="lg:col-span-2 xl:col-span-3">
+                <div className="lg:col-span-2 xl:col-span-3 h-full overflow-y-auto no-scrollbar">
                     <div className="space-y-8">
                         <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                             <h2 className="text-2xl font-bold tracking-tight">
@@ -349,11 +339,18 @@ export default function Home() {
                     </div>
                 </div>
 
+                {/* Sidebar */}
+                <div className="lg:col-span-1 xl:col-span-1 h-full overflow-y-auto no-scrollbar">
+                    <div className="lg:sticky lg:top-0 space-y-6">
+                        <ExpenseSummary user={user} expenses={filteredExpenses} />
+                        <CategoryBudgets user={user} expenses={filteredExpenses} />
+                        <SpendingChart expenses={filteredExpenses} currency={user.currency} />
+                        <CategoryPieChart expenses={filteredExpenses} currency={user.currency} customCategories={user.customCategories || []} />
+                    </div>
+                </div>
             </div>
         </div>
       </main>
     </div>
   );
 }
-
-    
