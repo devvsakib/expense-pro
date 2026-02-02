@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -92,7 +93,7 @@ export default function ExpenseForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: "",
-      amount: undefined,
+      amount: "" as any,
       date: new Date(),
       category: undefined,
       status: "completed",
@@ -111,7 +112,7 @@ export default function ExpenseForm({
       } else {
         form.reset({
           title: "",
-          amount: undefined,
+          amount: "" as any,
           date: new Date(),
           category: undefined,
           status: "completed",

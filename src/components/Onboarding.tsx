@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -61,7 +62,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
   const formStep2 = useForm<Step2Values>({
     resolver: zodResolver(step2Schema),
     defaultValues: {
-      salary: undefined,
+      salary: '',
       salaryPassword: "",
     },
   });
