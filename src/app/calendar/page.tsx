@@ -2,14 +2,15 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { isSameDay } from 'date-fns';
+import { isSameDay, addMonths, subMonths, format } from 'date-fns';
 import type { Expense, Task, UserProfile } from '@/app/types';
 import Link from 'next/link';
-import { ArrowLeft, Calendar as CalendarIcon } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import Header from '@/components/Header';
-import { Calendar } from '@/components/ui/calendar';
-import { Card } from '@/components/ui/card';
 import CalendarDayDetails from '@/components/CalendarDayDetails';
+import FullCalendar from '@/components/FullCalendar';
+import { Button } from '@/components/ui/button';
+
 
 export default function CalendarPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -39,15 +40,12 @@ export default function CalendarPage() {
     }
   }, []);
 
-  const eventDates = useMemo(() => {
-    const dates = new Set<string>();
-    expenses.forEach(e => dates.add(e.date.toDateString()));
-    tasks.forEach(t => dates.add(t.deadline.toDateString()));
-    return Array.from(dates).map(d => new Date(d));
-  }, [expenses, tasks]);
+  const handlePrevMonth = () => {
+    setCurrentMonth(prev => subMonths(prev, 1));
+  };
 
-  const eventModifier = {
-    'with-event': eventDates,
+  const handleNextMonth = () => {
+    setCurrentMonth(prev => addMonths(prev, 1));
   };
 
   const filteredEvents = useMemo(() => {
@@ -66,36 +64,41 @@ export default function CalendarPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="container mx-auto py-8 px-4 flex-1">
-        <div className="max-w-6xl mx-auto h-full">
+        <div className="max-w-7xl mx-auto h-full">
             <Link href="/" className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
             </Link>
             <div className="flex justify-between items-center mb-8">
-                <div>
+                <div className="flex items-center gap-8">
                     <h1 className="text-3xl md:text-4xl font-bold flex items-center gap-3">
                         <CalendarIcon className="h-8 w-8" />
-                        Calendar View
+                        Calendar
                     </h1>
-                    <p className="text-muted-foreground">A unified view of your tasks and expenses.</p>
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" size="icon" onClick={handlePrevMonth} aria-label="Previous month">
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <h2 className="text-xl font-semibold w-40 text-center">{format(currentMonth, 'MMMM yyyy')}</h2>
+                        <Button variant="outline" size="icon" onClick={handleNextMonth} aria-label="Next month">
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[calc(100%-120px)]">
-                <Card className="lg:col-span-2 flex justify-center items-start pt-6">
-                    <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        month={currentMonth}
-                        onMonthChange={setCurrentMonth}
-                        modifiers={eventModifier}
-                        modifiersClassNames={{
-                            'with-event': 'day-with-event',
-                        }}
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+                <div className="xl:col-span-3">
+                     <FullCalendar
+                        currentMonth={currentMonth}
+                        selectedDate={selectedDate}
+                        onDateSelect={setSelectedDate}
+                        expenses={expenses}
+                        tasks={tasks}
+                        currency={user.currency}
                     />
-                </Card>
-                <div className="lg:col-span-1 h-full">
+                </div>
+                <div className="xl:col-span-1">
                     {selectedDate && <CalendarDayDetails selectedDate={selectedDate} expenses={filteredEvents.expenses} tasks={filteredEvents.tasks} user={user} />}
                 </div>
             </div>
