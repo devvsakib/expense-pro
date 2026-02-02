@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, DollarSign } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
+import { cn, getCurrencySymbol } from "@/lib/utils";
 import {
   expenseCategories,
   expenseStatuses,
@@ -74,6 +74,7 @@ interface ExpenseFormProps {
   onClose: () => void;
   onSubmit: (values: FormValues) => void;
   expense: Expense | null;
+  currency: string;
 }
 
 export default function ExpenseForm({
@@ -81,7 +82,9 @@ export default function ExpenseForm({
   onClose,
   onSubmit,
   expense,
+  currency,
 }: ExpenseFormProps) {
+  const currencySymbol = getCurrencySymbol(currency);
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -158,7 +161,9 @@ export default function ExpenseForm({
                     <FormLabel>Amount</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+                          {currencySymbol}
+                        </span>
                         <Input type="number" placeholder="0.00" className="pl-8" {...field} />
                       </div>
                     </FormControl>

@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Settings, BarChart } from "lucide-react";
 import { CompassIcon } from "./icons";
+import Link from "next/link";
 
 export default function Header() {
   return (
@@ -16,10 +17,12 @@ export default function Header() {
             <BarChart className="h-4 w-4" />
             <span className="sr-only">Reports</span>
           </Button>
-          <Button variant="ghost" size="icon" disabled>
-            <Settings className="h-4 w-4" />
-            <span className="sr-only">Settings</span>
-          </Button>
+          <Link href="/settings">
+            <Button variant="ghost" size="icon">
+              <Settings className="h-4 w-4" />
+              <span className="sr-only">Settings</span>
+            </Button>
+          </Link>
         </div>
       </div>
     </header>

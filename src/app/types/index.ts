@@ -36,9 +36,21 @@ export type CustomCategory = {
   emoji: string;
 };
 
+export const currencyOptions = [
+    { value: "BDT", label: "BDT (৳)" },
+    { value: "USD", label: "USD ($)" },
+    { value: "EUR", label: "EUR (€)" },
+    { value: "GBP", label: "GBP (£)" },
+    { value: "INR", label: "INR (₹)" },
+] as const;
+
+export type Currency = typeof currencyOptions[number]['value'];
+
+
 export type UserProfile = {
   name: string;
   monthlyBudget: number;
+  currency: Currency;
   salary?: number;
   salaryPassword?: string;
 };

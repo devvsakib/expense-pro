@@ -7,9 +7,10 @@ interface ExpenseListProps {
   expenses: Expense[];
   onDelete: (id: string) => void;
   onEdit: (expense: Expense) => void;
+  currency: string;
 }
 
-export default function ExpenseList({ expenses, onDelete, onEdit }: ExpenseListProps) {
+export default function ExpenseList({ expenses, onDelete, onEdit, currency }: ExpenseListProps) {
   if (expenses.length === 0) {
     return (
       <Card className="text-center py-16 border-dashed border-2">
@@ -36,6 +37,7 @@ export default function ExpenseList({ expenses, onDelete, onEdit }: ExpenseListP
           expense={expense}
           onDelete={onDelete}
           onEdit={onEdit}
+          currency={currency}
         />
       ))}
     </div>

@@ -31,7 +31,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { cn, getCurrencySymbol } from "@/lib/utils";
 import React from "react";
 
 const categoryIcons: Record<ExpenseCategory, React.ElementType> = {
@@ -62,11 +62,13 @@ interface ExpenseItemProps {
   expense: Expense;
   onDelete: (id: string) => void;
   onEdit: (expense: Expense) => void;
+  currency: string;
 }
 
-export default function ExpenseItem({ expense, onDelete, onEdit }: ExpenseItemProps) {
+export default function ExpenseItem({ expense, onDelete, onEdit, currency }: ExpenseItemProps) {
   const Icon = categoryIcons[expense.category] || Circle;
   const StatusIcon = statusIconMap[expense.status] || Circle;
+  const currencySymbol = getCurrencySymbol(currency);
 
   return (
     <Card className="transition-all hover:shadow-lg animate-in fade-in-0 zoom-in-95">
@@ -77,7 +79,7 @@ export default function ExpenseItem({ expense, onDelete, onEdit }: ExpenseItemPr
         <div className="grid gap-1.5 flex-1">
           <div className="flex justify-between items-start">
             <p className="font-semibold text-lg">{expense.title}</p>
-            <p className="font-bold text-lg">${expense.amount.toFixed(2)}</p>
+            <p className="font-bold text-lg">{currencySymbol}{expense.amount.toFixed(2)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">

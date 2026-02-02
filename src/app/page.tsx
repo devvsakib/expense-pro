@@ -20,12 +20,7 @@ import {
 } from "@/components/ui/select";
 import SpendingChart from "@/components/SpendingChart";
 import CategoryPieChart from "@/components/CategoryPieChart";
-
-// MOCK_USER will be replaced by onboarding flow later
-const MOCK_USER: UserProfile = {
-  name: "Alex",
-  monthlyBudget: 3000,
-};
+import Onboarding from "@/components/Onboarding";
 
 export default function Home() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -45,9 +40,6 @@ export default function Home() {
       const storedUser = localStorage.getItem("expense-tracker-user");
       if (storedUser) {
         setUser(JSON.parse(storedUser));
-      } else {
-        setUser(MOCK_USER);
-        localStorage.setItem("expense-tracker-user", JSON.stringify(MOCK_USER));
       }
 
       const storedExpenses = localStorage.getItem("expense-tracker-expenses");
@@ -62,6 +54,8 @@ export default function Home() {
       }
     } catch (error) {
       console.error("Failed to load data from localStorage", error);
+      localStorage.removeItem("expense-tracker-user");
+      localStorage.removeItem("expense-tracker-expenses");
     }
   }, []);
 
@@ -108,6 +102,11 @@ export default function Home() {
   const handleDeleteExpense = (id: string) => {
     setExpenses(expenses.filter((expense) => expense.id !== id));
   };
+
+  const handleOnboardingComplete = (profile: UserProfile) => {
+    setUser(profile);
+    localStorage.setItem("expense-tracker-user", JSON.stringify(profile));
+  };
   
   const filteredExpenses = useMemo(() => {
     return expenses
@@ -119,7 +118,7 @@ export default function Home() {
       );
   }, [expenses, searchQuery, statusFilter]);
 
-  if (!isClient || !user) {
+  if (!isClient) {
     return (
       <div className="flex flex-col min-h-screen">
         <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -148,10 +147,9 @@ export default function Home() {
     );
   }
 
-  // TODO: Add Onboarding flow
-  // if (!user.name) {
-  //   return <OnboardingWizard />;
-  // }
+  if (!user) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -162,6 +160,7 @@ export default function Home() {
         onClose={handleCloseForm}
         onSubmit={handleSaveExpense}
         expense={editingExpense}
+        currency={user.currency}
       />
       
       <main className="flex-1">
@@ -174,11 +173,11 @@ export default function Home() {
               Here's your financial overview for this month.
             </p>
 
-            <ExpenseSummary budget={user.monthlyBudget} expenses={expenses} />
+            <ExpenseSummary user={user} expenses={expenses} />
 
             <div className="grid md:grid-cols-2 gap-6 mt-8">
-              <SpendingChart expenses={expenses} />
-              <CategoryPieChart expenses={expenses} />
+              <SpendingChart expenses={expenses} currency={user.currency} />
+              <CategoryPieChart expenses={expenses} currency={user.currency} />
             </div>
 
             <div className="mt-8">
@@ -222,6 +221,7 @@ export default function Home() {
                 expenses={filteredExpenses}
                 onDelete={handleDeleteExpense}
                 onEdit={handleOpenForm}
+                currency={user.currency}
               />
             </div>
           </div>

@@ -18,12 +18,15 @@ import {
   ChartLegendContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { getCurrencySymbol } from "@/lib/utils";
 
 interface CategoryPieChartProps {
   expenses: Expense[];
+  currency: string;
 }
 
-export default function CategoryPieChart({ expenses }: CategoryPieChartProps) {
+export default function CategoryPieChart({ expenses, currency }: CategoryPieChartProps) {
+  const currencySymbol = getCurrencySymbol(currency);
   const {data: categoryData, config: chartConfig } = useMemo(() => {
     const dataMap: { [key in string]?: number } = {};
     expenses.forEach(expense => {
@@ -71,7 +74,10 @@ export default function CategoryPieChart({ expenses }: CategoryPieChartProps) {
             <PieChart>
                 <ChartTooltip
                     cursor={false}
-                    content={<ChartTooltipContent hideLabel />}
+                    content={<ChartTooltipContent 
+                      hideLabel 
+                      formatter={(value) => `${currencySymbol}${(value as number).toLocaleString()}`}
+                    />}
                 />
                 <Pie
                     data={categoryData}

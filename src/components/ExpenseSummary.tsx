@@ -1,4 +1,4 @@
-import type { Expense } from "@/app/types";
+import type { Expense, UserProfile } from "@/app/types";
 import {
   Card,
   CardContent,
@@ -7,13 +7,17 @@ import {
 } from "@/components/ui/card";
 import { DollarSign, PiggyBank, CreditCard } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { getCurrencySymbol } from "@/lib/utils";
 
 interface BudgetOverviewProps {
-  budget: number;
+  user: UserProfile;
   expenses: Expense[];
 }
 
-export default function ExpenseSummary({ budget, expenses }: BudgetOverviewProps) {
+export default function ExpenseSummary({ user, expenses }: BudgetOverviewProps) {
+  const { monthlyBudget: budget, currency } = user;
+  const currencySymbol = getCurrencySymbol(currency);
+  
   const spent = expenses.reduce(
     (sum, expense) => sum + expense.amount,
     0
@@ -29,7 +33,7 @@ export default function ExpenseSummary({ budget, expenses }: BudgetOverviewProps
           <PiggyBank className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">${budget.toLocaleString()}</div>
+          <div className="text-2xl font-bold">{currencySymbol}{budget.toLocaleString()}</div>
           <p className="text-xs text-muted-foreground">Your spending limit</p>
         </CardContent>
       </Card>
@@ -39,7 +43,7 @@ export default function ExpenseSummary({ budget, expenses }: BudgetOverviewProps
           <CreditCard className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">${spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+          <div className="text-2xl font-bold">{currencySymbol}{spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
           <Progress value={progressPercentage} className="mt-2 h-2" />
         </CardContent>
       </Card>
@@ -50,7 +54,7 @@ export default function ExpenseSummary({ budget, expenses }: BudgetOverviewProps
         </CardHeader>
         <CardContent>
           <div className={`text-2xl font-bold ${remaining < 0 ? 'text-destructive' : ''}`}>
-            ${remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            {currencySymbol}{remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2})}
           </div>
           <p className="text-xs text-muted-foreground">
             {remaining < 0 ? 'You are over budget' : 'Left in your budget'}

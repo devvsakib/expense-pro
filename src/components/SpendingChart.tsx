@@ -17,12 +17,15 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { getCurrencySymbol } from "@/lib/utils";
 
 interface SpendingChartProps {
   expenses: Expense[];
+  currency: string;
 }
 
-export default function SpendingChart({ expenses }: SpendingChartProps) {
+export default function SpendingChart({ expenses, currency }: SpendingChartProps) {
+  const currencySymbol = getCurrencySymbol(currency);
   const spendingData = useMemo(() => {
     const last7Days = Array.from({ length: 7 }, (_, i) => subDays(startOfDay(new Date()), i)).reverse();
 
@@ -67,7 +70,7 @@ export default function SpendingChart({ expenses }: SpendingChartProps) {
               axisLine={false}
               tickMargin={8}
               fontSize={12}
-              tickFormatter={(value) => `$${value}`}
+              tickFormatter={(value) => `${currencySymbol}${value}`}
               domain={[0, 'dataMax + 20']}
             />
             <ChartTooltip
