@@ -18,6 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SpendingChart from "@/components/SpendingChart";
+import CategoryPieChart from "@/components/CategoryPieChart";
 
 // MOCK_USER will be replaced by onboarding flow later
 const MOCK_USER: UserProfile = {
@@ -134,6 +136,10 @@ export default function Home() {
                 <Skeleton className="h-32 w-full" />
                 <Skeleton className="h-32 w-full" />
               </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64 w-full" />
+              </div>
               <Skeleton className="h-64 w-full" />
             </div>
           </div>
@@ -169,6 +175,11 @@ export default function Home() {
             </p>
 
             <ExpenseSummary budget={user.monthlyBudget} expenses={expenses} />
+
+            <div className="grid md:grid-cols-2 gap-6 mt-8">
+              <SpendingChart expenses={expenses} />
+              <CategoryPieChart expenses={expenses} />
+            </div>
 
             <div className="mt-8">
               <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
