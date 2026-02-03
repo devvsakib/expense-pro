@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format, startOfMonth } from "date-fns";
 import { Calendar as CalendarIcon, Camera, Loader2, Sparkles } from "lucide-react";
+import { createWorker } from 'tesseract.js';
 
 import { Button } from "@/components/ui/button";
 import {
@@ -101,6 +102,7 @@ export default function ExpenseForm({
   });
   
   const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState<{ progress: number; status: string } | null>(null);
   const [isCategorizing, setIsCategorizing] = useState(false);
   const [aiSuggestedCategory, setAiSuggestedCategory] = useState<string | null>(null);
   const [aiCategoryError, setAiCategoryError] = useState<string | null>(null);
@@ -231,62 +233,92 @@ export default function ExpenseForm({
     if (!file) return;
 
     setIsScanning(true);
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-        const dataUri = reader.result as string;
-        
-        const allCategories = [
-            ...expenseCategories,
-            ...(user.customCategories?.map(c => c.name) || [])
-        ];
+    setScanProgress(null);
+    const allCategories = [
+        ...expenseCategories,
+        ...(user.customCategories?.map(c => c.name) || [])
+    ];
 
-        try {
-            const result = await scanReceipt({ 
-              photoDataUri: dataUri, 
-              categories: allCategories,
-              useMockAI: user.useMockAI || false
-            });
-            
-            form.setValue('title', result.title);
-            form.setValue('amount', result.amount);
-            // The date from AI is YYYY-MM-DD, add T00:00:00 to avoid timezone issues
-            form.setValue('date', new Date(`${result.date}T00:00:00`));
-            
-            if (allCategories.includes(result.category)) {
-                form.setValue('category', result.category, { shouldDirty: true });
-                setAiSuggestedCategory(result.category);
-            }
-
-            form.setValue('notes', result.notes || '');
-
-            toast({
-                title: "Receipt Scanned!",
-                description: "Your form has been pre-filled with the receipt details."
-            });
-
-        } catch (error) {
-            console.error("Failed to scan receipt", error);
-            toast({
-                variant: "destructive",
-                title: "Scan Failed",
-                description: "Could not extract details from the receipt. This might be due to a request limit.",
-            });
-        } finally {
-            setIsScanning(false);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
+    const populateFormWithResult = (result: any) => {
+        form.setValue('title', result.title);
+        form.setValue('amount', result.amount);
+        form.setValue('date', new Date(`${result.date}T00:00:00`));
+        if (allCategories.includes(result.category)) {
+            form.setValue('category', result.category, { shouldDirty: true });
+            setAiSuggestedCategory(result.category);
         }
+        form.setValue('notes', result.notes || '');
+        toast({
+            title: "Receipt Scanned!",
+            description: "Your form has been pre-filled."
+        });
     };
-    reader.onerror = (error) => {
-        console.error("Error reading file:", error);
-        setIsScanning(false);
+    
+    const handleError = (error: any) => {
+        console.error("Failed to scan receipt", error);
         toast({
             variant: "destructive",
-            title: "File Error",
-            description: "Could not read the selected file."
+            title: "Scan Failed",
+            description: "Could not extract details from the receipt. This might be due to a request limit.",
         });
+    };
+
+    const cleanup = () => {
+        setIsScanning(false);
+        setScanProgress(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+    
+    if (user.ocrEngine === 'tesseract-ai' && !user.useMockAI) {
+        try {
+            const worker = await createWorker({
+                logger: m => {
+                    if (m.status === 'recognizing text') {
+                        setScanProgress({ progress: Math.round(m.progress * 100), status: m.status });
+                    } else {
+                        setScanProgress({ progress: 0, status: m.status });
+                    }
+                }
+            });
+            await worker.loadLanguage('eng');
+            await worker.initialize('eng');
+            const { data: { text } } = await worker.recognize(file);
+            await worker.terminate();
+    
+            setScanProgress({ progress: 100, status: 'Analyzing text...' });
+            
+            const result = await scanReceipt({ rawText: text, categories: allCategories });
+            populateFormWithResult(result);
+        } catch (error) {
+            handleError(error);
+        } finally {
+            cleanup();
+        }
+    } else {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+            const dataUri = reader.result as string;
+            setScanProgress({ progress: 50, status: 'Sending to AI...' });
+            try {
+                const result = await scanReceipt({ 
+                    photoDataUri: dataUri, 
+                    categories: allCategories,
+                    useMockAI: user.useMockAI || false
+                });
+                populateFormWithResult(result);
+            } catch (error) {
+                handleError(error);
+            } finally {
+                cleanup();
+            }
+        };
+        reader.onerror = (error) => {
+            handleError(error);
+            cleanup();
+        }
     }
   };
 
@@ -322,11 +354,15 @@ export default function ExpenseForm({
                     onClick={() => fileInputRef.current?.click()}
                 >
                     {isScanning ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Scanning...</>
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                        {scanProgress ? `${scanProgress.status}` : 'Scanning...'}</>
                     ) : (
                         <><Camera className="mr-2 h-4 w-4" /> Scan Receipt</>
                     )}
                 </Button>
+                {isScanning && scanProgress && scanProgress.progress > 0 && (
+                    <Progress value={scanProgress.progress} className="w-full h-1 mt-2" />
+                )}
             </div>
 
 

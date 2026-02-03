@@ -18,8 +18,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { UserProfile, Currency, CustomCategory, Expense, CategoryBudget, ExpenseStatus, Recurrence } from '@/app/types';
-import { currencyOptions, expenseCategories, expenseStatuses, recurrenceOptions } from '@/app/types';
+import type { UserProfile, Currency, CustomCategory, Expense, CategoryBudget, ExpenseStatus, Recurrence, OcrEngine } from '@/app/types';
+import { currencyOptions, expenseCategories, expenseStatuses, recurrenceOptions, ocrEngineOptions } from '@/app/types';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download, Target, Bot, Settings as SettingsIcon } from 'lucide-react';
@@ -52,6 +52,7 @@ import 'jspdf-autotable';
 import { getCurrencySymbol } from '@/lib/utils';
 import ThemeSwitcher from '@/components/ThemeSwitcher';
 import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -65,6 +66,7 @@ const profileFormSchema = z.object({
   defaultStatus: z.enum(expenseStatuses).optional(),
   defaultRecurrence: z.enum(recurrenceOptions).optional(),
   apiKey: z.string().optional(),
+  ocrEngine: z.enum(ocrEngineOptions).optional(),
 }).refine(data => (data.salary && data.salary > 0) ? !!data.salaryPassword : true, {
     message: "A password is required if you set a salary.",
     path: ["salaryPassword"],
@@ -129,6 +131,7 @@ export default function SettingsPage() {
               defaultStatus: parsedUser.defaultStatus || 'completed',
               defaultRecurrence: parsedUser.defaultRecurrence || 'one-time',
               apiKey: parsedUser.apiKey || '',
+              ocrEngine: parsedUser.ocrEngine || 'multimodal-ai',
           });
         }
         const storedExpenses = localStorage.getItem('expense-tracker-expenses');
@@ -749,7 +752,7 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                   <Form {...profileForm}>
-                      <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-6">
+                      <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-8">
                            <FormField
                               control={profileForm.control}
                               name="apiKey"
@@ -776,7 +779,7 @@ export default function SettingsPage() {
                                         <Bot /> Use Mock AI for Receipt Scanning
                                     </FormLabel>
                                     <FormDescription>
-                                      Enable this to use simulated AI responses instead of real ones.
+                                      Enable this to use simulated AI responses instead of real ones. (Multimodal AI only)
                                     </FormDescription>
                                   </div>
                                   <FormControl>
@@ -787,6 +790,40 @@ export default function SettingsPage() {
                                   </FormControl>
                                 </FormItem>
                               )}
+                            />
+                            <FormField
+                                control={profileForm.control}
+                                name="ocrEngine"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-3">
+                                    <FormLabel>Receipt OCR Engine</FormLabel>
+                                    <FormControl>
+                                        <RadioGroup
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        className="flex flex-col space-y-1"
+                                        >
+                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                            <FormControl>
+                                            <RadioGroupItem value="multimodal-ai" />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">
+                                            Multimodal AI (Recommended) - AI directly analyzes the image.
+                                            </FormLabel>
+                                        </FormItem>
+                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                            <FormControl>
+                                            <RadioGroupItem value="tesseract-ai" />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">
+                                            Tesseract + AI - Text is extracted locally, then sent to AI.
+                                            </FormLabel>
+                                        </FormItem>
+                                        </RadioGroup>
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
                             />
                           <Button type="submit">Save AI Settings</Button>
                       </form>

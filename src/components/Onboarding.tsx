@@ -18,11 +18,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { UserProfile, Currency } from "@/app/types";
-import { currencyOptions } from "@/app/types";
+import type { UserProfile, Currency, OcrEngine } from "@/app/types";
+import { currencyOptions, ocrEngineOptions } from "@/app/types";
 import { AnimatePresence, motion } from "framer-motion";
 import { CompassIcon } from "@/components/icons";
 import { Separator } from "./ui/separator";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 
 const step1Schema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -36,6 +37,7 @@ const step2Schema = z.object({
         message: "Password must be at least 4 characters.",
     }),
     apiKey: z.string().optional(),
+    ocrEngine: z.enum(ocrEngineOptions).optional(),
 }).refine(data => (data.salary && data.salary > 0) ? !!data.salaryPassword : true, {
     message: "Password is required if salary is provided.",
     path: ["salaryPassword"],
@@ -68,6 +70,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       salary: '',
       salaryPassword: "",
       apiKey: "",
+      ocrEngine: 'multimodal-ai',
     },
   });
 
@@ -86,6 +89,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         customCategories: [],
         defaultStatus: 'completed',
         defaultRecurrence: 'one-time',
+        ocrEngine: values.ocrEngine || 'multimodal-ai'
     } as UserProfile;
     onComplete(finalProfile);
   }
@@ -96,6 +100,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       customCategories: [],
       defaultStatus: 'completed',
       defaultRecurrence: 'one-time',
+      ocrEngine: 'multimodal-ai',
     } as UserProfile;
     onComplete(finalProfile);
   };
@@ -200,8 +205,63 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               >
                 <Form {...formStep2}>
                     <form onSubmit={formStep2.handleSubmit(onStep2Submit)} className="space-y-6">
-                        <CardTitle className="text-xl text-center">Salary Details (Optional)</CardTitle>
-                        <div className="grid grid-cols-2 gap-4">
+                        <CardTitle className="text-xl text-center">Optional Details</CardTitle>
+                        
+                        <FormField
+                          control={formStep2.control}
+                          name="apiKey"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Google AI API Key</FormLabel>
+                              <FormControl>
+                                <Input type="password" placeholder="Enter your API key" {...field} value={field.value ?? ""} />
+                              </FormControl>
+                              <FormDescription>
+                                For AI features. You can get a key from Google AI Studio.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                            control={formStep2.control}
+                            name="ocrEngine"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                <FormLabel>Receipt Scanning Engine</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex flex-col space-y-1"
+                                    >
+                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="multimodal-ai" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        Multimodal AI (Recommended)
+                                        </FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="tesseract-ai" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        Tesseract + AI
+                                        </FormLabel>
+                                    </FormItem>
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <Separator />
+
+                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                               control={formStep2.control}
                               name="salary"
@@ -231,24 +291,6 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                         </div>
                         <p className="text-xs text-muted-foreground text-center">Your salary information will be password-protected.</p>
 
-                        <Separator />
-
-                        <FormField
-                          control={formStep2.control}
-                          name="apiKey"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Google AI API Key (Optional)</FormLabel>
-                              <FormControl>
-                                <Input type="password" placeholder="Enter your API key" {...field} value={field.value ?? ""} />
-                              </FormControl>
-                              <FormDescription>
-                                For AI features. You can get a key from Google AI Studio.
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
 
                         <div className="flex gap-4">
                             <Button type="button" variant="outline" className="w-full" onClick={() => setStep(1)}>

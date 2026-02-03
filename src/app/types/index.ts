@@ -51,6 +51,9 @@ export type CategoryBudget = {
     amount: number;
 };
 
+export const ocrEngineOptions = ['multimodal-ai', 'tesseract-ai'] as const;
+export type OcrEngine = (typeof ocrEngineOptions)[number];
+
 export type UserProfile = {
   name: string;
   monthlyBudget: number;
@@ -63,6 +66,7 @@ export type UserProfile = {
   defaultStatus?: ExpenseStatus;
   defaultRecurrence?: Recurrence;
   apiKey?: string;
+  ocrEngine?: OcrEngine;
 };
 
 export const importanceLevels = ["high", "medium", "low"] as const;

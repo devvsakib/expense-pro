@@ -17,10 +17,14 @@ import {z} from 'genkit';
 import { format } from 'date-fns';
 
 const ReceiptScanInputSchema = z.object({
-  photoDataUri: z.string().describe("A photo of a receipt, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."),
+  photoDataUri: z.string().describe("A photo of a receipt, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'.").optional(),
+  rawText: z.string().describe("Raw text extracted from a receipt.").optional(),
   categories: z.array(z.string()).describe("A list of possible expense categories."),
   useMockAI: z.boolean().optional().describe("If true, use the mock AI instead of the real one."),
+}).refine(data => data.photoDataUri || data.rawText, {
+  message: "Either a photo data URI or raw text must be provided."
 });
+
 export type ReceiptScanInput = z.infer<typeof ReceiptScanInputSchema>;
 
 const ReceiptScanOutputSchema = z.object({
@@ -41,17 +45,24 @@ const scanReceiptPrompt = ai.definePrompt({
   name: 'scanReceiptPrompt',
   input: {schema: ReceiptScanInputSchema},
   output: {schema: ReceiptScanOutputSchema},
-  prompt: `You are an expert receipt scanner. Analyze the provided receipt image and extract the following information:
+  prompt: `You are an expert receipt scanner. Analyze the provided receipt information and extract the following information:
 1.  **Title**: The name of the vendor or store. If not available, create a concise description of the purchase (e.g., "Groceries from Market").
 2.  **Amount**: The final total amount paid. It's usually labeled as "Total", "Grand Total", or "Amount Paid".
 3.  **Date**: The date of the transaction. Return it in YYYY-MM-DD format. If the year is not present, assume the current year.
 4.  **Category**: Based on the items or vendor, classify the expense into one of the following categories: {{#each categories}}'{{this}}'{{#unless @last}}, {{/unless}}{{/each}}.
 5.  **Notes**: A summary of the items purchased or the purpose of the expense. If individual items are listed, provide a brief summary (e.g., "Milk, bread, eggs"). If no items are clear, leave this blank.
 
+{{#if photoDataUri}}
+The information is from an image of a receipt.
 Receipt Image:
 {{media url=photoDataUri}}
+{{else}}
+The information is from raw text that was extracted from a receipt image.
+Receipt Text:
+{{{rawText}}}
+{{/if}}
 
-Analyze the image and return the extracted information in the specified JSON format. Be as accurate as possible.`,
+Analyze the information and return the extracted details in the specified JSON format. Be as accurate as possible.`,
 });
 
 
