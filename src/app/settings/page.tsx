@@ -816,7 +816,7 @@ export default function SettingsPage() {
                                             <RadioGroupItem value="tesseract-ai" />
                                             </FormControl>
                                             <FormLabel className="font-normal">
-                                            Tesseract + AI - Text is extracted locally, then sent to AI.
+                                            Inbuilt AI - Text is extracted locally, then analyzed by AI.
                                             </FormLabel>
                                         </FormItem>
                                         </RadioGroup>

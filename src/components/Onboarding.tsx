@@ -249,7 +249,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
                                         <RadioGroupItem value="tesseract-ai" />
                                         </FormControl>
                                         <FormLabel className="font-normal">
-                                        Tesseract + AI
+                                        Inbuilt AI
                                         </FormLabel>
                                     </FormItem>
                                     </RadioGroup>
