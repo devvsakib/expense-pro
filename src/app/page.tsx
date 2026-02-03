@@ -216,7 +216,7 @@ export default function Home() {
                     Here's your financial overview.
                 </p>
                 </div>
-                <div className="flex w-full md:w-auto shrink-0 gap-2">
+                <div className="flex flex-col sm:flex-row w-full md:w-auto shrink-0 gap-2">
                     <Button asChild variant="outline" className="w-full sm:w-auto">
                       <Link href="/reports">
                           <FileText className="mr-2 h-4 w-4" /> View Reports
@@ -228,7 +228,7 @@ export default function Home() {
                                 <LayoutDashboard className="mr-2 h-4 w-4" /> View Summary
                             </Button>
                         </SheetTrigger>
-                        <SheetContent className="max-w-sm overflow-y-auto p-0">
+                        <SheetContent className="sm:max-w-sm overflow-y-auto p-0">
                             <div className="p-6">{sidebarContent}</div>
                         </SheetContent>
                     </Sheet>

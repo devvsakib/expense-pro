@@ -292,262 +292,264 @@ export default function ExpenseForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[600px] flex flex-col max-h-[90dvh] p-0">
+        <DialogHeader className="p-6 pb-4">
           <DialogTitle>{expense ? "Edit Expense" : "Add New Expense"}</DialogTitle>
           <DialogDescription>
             Fill in the details of your expense. Click save when you're done.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="p-4 bg-secondary/50 rounded-lg border border-dashed">
-            <h3 className="text-sm font-medium mb-2">Have a receipt?</h3>
-            <p className="text-xs text-muted-foreground mb-3">
-                Upload an image of your receipt and let AI fill in the details for you.
-            </p>
-            <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={handleReceiptScan}
-                disabled={isScanning}
-            />
-            <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                disabled={isScanning}
-                onClick={() => fileInputRef.current?.click()}
-            >
-                {isScanning ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Scanning...</>
-                ) : (
-                    <><Camera className="mr-2 h-4 w-4" /> Scan Receipt</>
-                )}
-            </Button>
-        </div>
+        <div className="flex-1 overflow-y-auto px-6 space-y-4">
+            <div className="p-4 bg-secondary/50 rounded-lg border border-dashed">
+                <h3 className="text-sm font-medium mb-2">Have a receipt?</h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                    Upload an image of your receipt and let AI fill in the details for you.
+                </p>
+                <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleReceiptScan}
+                    disabled={isScanning}
+                />
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={isScanning}
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    {isScanning ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Scanning...</>
+                    ) : (
+                        <><Camera className="mr-2 h-4 w-4" /> Scan Receipt</>
+                    )}
+                </Button>
+            </div>
 
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Lunch with colleagues" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
+            <Form {...form}>
+            <form id="expense-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                <FormField
                 control={form.control}
-                name="amount"
+                name="title"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormItem>
+                    <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
-                          {currencySymbol}
-                        </span>
-                        <Input type="number" placeholder="0.00" className="pl-8" {...field} value={field.value ?? ""} />
-                      </div>
+                        <Input placeholder="e.g., Lunch with colleagues" {...field} />
                     </FormControl>
                     <FormMessage />
-                  </FormItem>
+                    </FormItem>
                 )}
-              />
+                />
 
-              <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Date of Expense</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant={"outline"}
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Pick a date</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
                     <FormItem>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <FormLabel>Category</FormLabel>
-                                {isCategorizing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                            </div>
-                            {aiSuggestedCategory === field.value && !isCategorizing && (
-                                <div className="flex items-center gap-1 text-xs text-primary animate-in fade-in-0">
-                                    <Sparkles className="h-3 w-3" />
-                                    <span>AI Suggested</span>
-                                </div>
-                            )}
+                        <FormLabel>Amount</FormLabel>
+                        <FormControl>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+                            {currencySymbol}
+                            </span>
+                            <Input type="number" placeholder="0.00" className="pl-8" {...field} value={field.value ?? ""} />
                         </div>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
-                          <SelectGroup>
-                            <SelectLabel>Default Categories</SelectLabel>
-                             {expenseCategories.map((category) => (
-                              <SelectItem key={category} value={category}>
-                                {category}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                          {user.customCategories && user.customCategories.length > 0 && (
-                            <SelectGroup>
-                              <SelectLabel>Custom Categories</SelectLabel>
-                              {user.customCategories.map((cat) => (
-                                <SelectItem key={cat.id} value={cat.name}>
-                                  <div className="flex items-center gap-2">
-                                    <span>{cat.emoji}</span>
-                                    <span>{cat.name}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      {aiCategoryError && <p className="text-xs text-destructive pt-1">{aiCategoryError}</p>}
-                      <FormMessage />
-                       {budgetInfo && (
-                            <div className="mt-2 text-xs p-3 rounded-md bg-secondary border">
-                                <div className="flex justify-between mb-1 font-medium">
-                                    <span>Monthly Budget</span>
-                                    <span>{currencySymbol}{budgetInfo.spent.toLocaleString()} / {currencySymbol}{budgetInfo.amount.toLocaleString()}</span>
-                                </div>
-                                <Progress value={budgetInfo.progress} className="h-1.5" />
-                                <p className={`text-right mt-1 font-medium ${budgetInfo.remaining < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                                    {currencySymbol}{budgetInfo.remaining.toLocaleString()} remaining
-                                </p>
-                            </div>
-                        )}
+                        <FormMessage />
                     </FormItem>
-                  )}
+                    )}
                 />
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {expenseStatuses.map((status) => (
-                            <SelectItem key={status} value={status} className="capitalize">
-                              {status}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="recurrence"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Recurrence</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select recurrence" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {recurrenceOptions.map((option) => (
-                            <SelectItem key={option} value={option} className="capitalize">
-                              {option.replace("-", " ")}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-            </div>
 
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Add any extra details about the expense..."
-                      className="resize-none"
-                      {...field}
+                <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <FormLabel>Date of Expense</FormLabel>
+                        <Popover>
+                        <PopoverTrigger asChild>
+                            <FormControl>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                "pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground"
+                                )}
+                            >
+                                {field.value ? (
+                                format(field.value, "PPP")
+                                ) : (
+                                <span>Pick a date</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                            </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                            mode="single"
+                            selected={field.value}
+                            onSelect={field.onChange}
+                            initialFocus
+                            />
+                        </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                        <FormItem>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <FormLabel>Category</FormLabel>
+                                    {isCategorizing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                                </div>
+                                {aiSuggestedCategory === field.value && !isCategorizing && (
+                                    <div className="flex items-center gap-1 text-xs text-primary animate-in fade-in-0">
+                                        <Sparkles className="h-3 w-3" />
+                                        <span>AI Suggested</span>
+                                    </div>
+                                )}
+                            </div>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            <SelectGroup>
+                                <SelectLabel>Default Categories</SelectLabel>
+                                {expenseCategories.map((category) => (
+                                <SelectItem key={category} value={category}>
+                                    {category}
+                                </SelectItem>
+                                ))}
+                            </SelectGroup>
+                            {user.customCategories && user.customCategories.length > 0 && (
+                                <SelectGroup>
+                                <SelectLabel>Custom Categories</SelectLabel>
+                                {user.customCategories.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.name}>
+                                    <div className="flex items-center gap-2">
+                                        <span>{cat.emoji}</span>
+                                        <span>{cat.name}</span>
+                                    </div>
+                                    </SelectItem>
+                                ))}
+                                </SelectGroup>
+                            )}
+                            </SelectContent>
+                        </Select>
+                        {aiCategoryError && <p className="text-xs text-destructive pt-1">{aiCategoryError}</p>}
+                        <FormMessage />
+                        {budgetInfo && (
+                                <div className="mt-2 text-xs p-3 rounded-md bg-secondary border">
+                                    <div className="flex justify-between mb-1 font-medium">
+                                        <span>Monthly Budget</span>
+                                        <span>{currencySymbol}{budgetInfo.spent.toLocaleString()} / {currencySymbol}{budgetInfo.amount.toLocaleString()}</span>
+                                    </div>
+                                    <Progress value={budgetInfo.progress} className="h-1.5" />
+                                    <p className={`text-right mt-1 font-medium ${budgetInfo.remaining < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                        {currencySymbol}{budgetInfo.remaining.toLocaleString()} remaining
+                                    </p>
+                                </div>
+                            )}
+                        </FormItem>
+                    )}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <DialogFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {expense ? "Save Changes" : "Add Expense"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+                    <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a status" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {expenseStatuses.map((status) => (
+                                <SelectItem key={status} value={status} className="capitalize">
+                                {status}
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="recurrence"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Recurrence</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select recurrence" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {recurrenceOptions.map((option) => (
+                                <SelectItem key={option} value={option} className="capitalize">
+                                {option.replace("-", " ")}
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
+
+                <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Notes (Optional)</FormLabel>
+                    <FormControl>
+                        <Textarea
+                        placeholder="Add any extra details about the expense..."
+                        className="resize-none"
+                        {...field}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </form>
+            </Form>
+        </div>
+        
+        <DialogFooter className="p-6 pt-4 border-t">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="expense-form">
+            {expense ? "Save Changes" : "Add Expense"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
