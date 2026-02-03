@@ -24,7 +24,8 @@ import {
   Circle,
   CheckCircle2,
   Clock,
-  Repeat
+  Repeat,
+  MessageSquareText
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -133,6 +134,12 @@ export default function ExpenseItem({ expense, onDelete, onEdit, currency, custo
                   {expense.status}
               </Badge>
             </div>
+            {expense.notes && (
+                <div className="flex items-start gap-1.5 mt-2 text-sm text-muted-foreground pt-2 border-t border-dashed">
+                    <MessageSquareText className="h-4 w-4 mt-0.5 shrink-0" />
+                    <p className="whitespace-pre-wrap">{expense.notes}</p>
+                </div>
+            )}
         </div>
         <div className="flex items-center gap-1">
           <AlertDialog>
