@@ -274,6 +274,8 @@ export default function SettingsPage() {
         Notes: e.notes || "",
     }));
 
+    const totalAmount = dataToExport.reduce((sum, item) => sum + item.Amount, 0);
+
     if (exportFormat === 'csv') {
       const csv = unparse(dataToExport);
       downloadFile(csv, `xpns-export-${date}.csv`, 'text/csv;charset=utf-8;');
@@ -286,7 +288,7 @@ export default function SettingsPage() {
 
       dataToExport.forEach(e => {
           txtContent += `Title: ${e.Title}\n`;
-          txtContent += `Amount: ${e.Amount} ${e.Currency}\n`;
+          txtContent += `Amount: ${e.Amount.toFixed(2)} ${e.Currency}\n`;
           txtContent += `Date: ${e.Date}\n`;
           txtContent += `Category: ${e.Category}\n`;
           txtContent += `Status: ${e.Status}\n`;
@@ -294,6 +296,9 @@ export default function SettingsPage() {
           txtContent += `Notes: ${e.Notes}\n`;
           txtContent += `----------------\n`;
       });
+      
+      txtContent += `\nTotal Amount: ${totalAmount.toFixed(2)} ${user.currency}\n`;
+
       downloadFile(txtContent, `xpns-export-${date}.txt`, 'text/plain;charset=utf-8;');
     } else if (exportFormat === 'pdf') {
         const doc = new jsPDF();
@@ -324,6 +329,13 @@ export default function SettingsPage() {
             body: tableRows,
             startY: 50,
         });
+        
+        const finalY = (doc as any).lastAutoTable.finalY;
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        const totalText = `Total Amount: ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${user.currency}`;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        doc.text(totalText, pageWidth - 14, finalY + 10, { align: 'right' });
         
         doc.save(`xpns-export-${date}.pdf`);
     }
