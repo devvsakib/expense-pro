@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -15,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import ReportSummary from '@/components/ReportSummary';
 import ReportTrendChart from '@/components/ReportTrendChart';
 import CategoryPieChart from '@/components/CategoryPieChart';
+import TopCategories from '@/components/TopCategories';
 
 export default function ReportsPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -207,6 +207,7 @@ export default function ReportsPage() {
                       </CardContent>
                   </Card>
                   <CategoryPieChart expenses={filteredExpenses} currency={user.currency} customCategories={user.customCategories || []} />
+                  <TopCategories user={user} expenses={filteredExpenses} />
               </div>
           </div>
         ) : (
