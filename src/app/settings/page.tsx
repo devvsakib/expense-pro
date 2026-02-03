@@ -275,6 +275,7 @@ export default function SettingsPage() {
     }));
 
     const totalAmount = dataToExport.reduce((sum, item) => sum + item.Amount, 0);
+    const currencyCode = user.currency;
 
     if (exportFormat === 'csv') {
       const csv = unparse(dataToExport);
@@ -282,7 +283,7 @@ export default function SettingsPage() {
     } else if (exportFormat === 'txt') {
       let txtContent = `XPNS Data Export - ${date}\n\n`;
       txtContent += `User: ${user.name}\n`;
-      txtContent += `Monthly Budget: ${user.monthlyBudget} ${user.currency}\n`;
+      txtContent += `Monthly Budget: ${user.monthlyBudget} ${currencyCode}\n`;
       txtContent += `------------------------------------\n\n`;
       txtContent += `Expenses (${expenses.length}):\n\n`;
 
@@ -297,7 +298,7 @@ export default function SettingsPage() {
           txtContent += `----------------\n`;
       });
       
-      txtContent += `\nTotal Amount: ${totalAmount.toFixed(2)} ${user.currency}\n`;
+      txtContent += `\nTotal Amount: ${totalAmount.toFixed(2)} ${currencyCode}\n`;
 
       downloadFile(txtContent, `xpns-export-${date}.txt`, 'text/plain;charset=utf-8;');
     } else if (exportFormat === 'pdf') {
@@ -309,9 +310,9 @@ export default function SettingsPage() {
         doc.setTextColor(100);
         doc.text(`Generated on: ${date}`, 14, 30);
         doc.text(`User: ${user.name}`, 14, 35);
-        doc.text(`Monthly Budget: ${user.monthlyBudget.toLocaleString()} ${user.currency}`, 14, 40);
+        doc.text(`Monthly Budget: ${user.monthlyBudget.toLocaleString()} ${currencyCode}`, 14, 40);
 
-        const tableColumn = ["Date", "Title", "Category", `Amount (${user.currency})`];
+        const tableColumn = ["Date", "Title", "Category", `Amount (${currencyCode})`];
         const tableRows: (string | number)[][] = [];
 
         dataToExport.forEach(item => {
@@ -333,7 +334,7 @@ export default function SettingsPage() {
         const finalY = (doc as any).lastAutoTable.finalY;
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        const totalText = `Total Amount: ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${user.currency}`;
+        const totalText = `Total Amount: ${totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currencyCode}`;
         const pageWidth = doc.internal.pageSize.getWidth();
         doc.text(totalText, pageWidth - 14, finalY + 10, { align: 'right' });
         
@@ -776,7 +777,11 @@ export default function SettingsPage() {
                                     <Input type="password" placeholder="Enter your API key" {...field} value={field.value ?? ""} />
                                   </FormControl>
                                   <FormDescription>
-                                    Your key is stored locally. Get one from Google AI Studio. It's optional.
+                                    Your key is stored locally. Get one from{' '}
+                                    <a href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">
+                                        Google AI Studio
+                                    </a>
+                                    . It's optional.
                                   </FormDescription>
                                   <FormMessage />
                                 </FormItem>

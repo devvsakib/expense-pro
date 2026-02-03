@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Settings, LayoutGrid, Wallet, PiggyBank, Repeat, CalendarDays, MessageCircle, FileText, Menu, Upload } from "lucide-react";
+import { Settings, LayoutGrid, Wallet, PiggyBank, Repeat, CalendarDays, MessageCircle, FileText, Menu, User } from "lucide-react";
 import { CompassIcon } from "./icons";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
@@ -14,6 +14,7 @@ export default function Header() {
     { href: "/calendar", title: "Calendar", icon: CalendarDays },
     { href: "/chat", title: "AI Chat", icon: MessageCircle },
     { href: "/reports", title: "Reports", icon: FileText },
+    { href: "/profile", title: "Profile", icon: User },
     { href: "/settings", title: "Settings", icon: Settings },
   ];
 
