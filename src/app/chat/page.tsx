@@ -50,7 +50,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="container mx-auto py-8 px-4 flex-1 flex flex-col max-w-4xl">
         <Link href="/" className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">

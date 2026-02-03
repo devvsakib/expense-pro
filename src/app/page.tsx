@@ -204,7 +204,7 @@ export default function Home() {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background">
       <Header />
       
       <ExpenseForm
@@ -223,8 +223,8 @@ export default function Home() {
         userCategories={user.customCategories?.map(c => c.name) || []}
       />
 
-      <main className="flex-1 overflow-hidden">
-        <div className="container mx-auto h-full flex flex-col px-4">
+      <main className="flex-1">
+        <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 py-8">
                 <div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-1">
@@ -259,61 +259,59 @@ export default function Home() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-8 flex-1 overflow-hidden pb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-8 pb-8">
                 {/* Main Content */}
-                <div className="md:col-span-2 xl:col-span-3 h-full flex flex-col">
-                    <div className="mb-8">
-                      <BudgetProgress user={user} expenses={filteredExpenses} />
-                    </div>
-                    <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-                        <h2 className="text-2xl font-bold tracking-tight self-start">
-                        Your Expenses
-                        </h2>
-                        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                        <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                            placeholder="Search expenses..."
-                            className="pl-9 w-full"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+                <div className="md:col-span-2 xl:col-span-3 flex flex-col gap-8">
+                    <BudgetProgress user={user} expenses={filteredExpenses} />
+                    <div>
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                            <h2 className="text-2xl font-bold tracking-tight self-start">
+                            Your Expenses
+                            </h2>
+                            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                            <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                placeholder="Search expenses..."
+                                className="pl-9 w-full"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <Select
+                                onValueChange={(value: "all" | "week" | "month" | "year") =>
+                                setDateFilter(value as any)
+                                }
+                                defaultValue="all"
+                            >
+                                <SelectTrigger className="w-full sm:w-[160px]">
+                                <SelectValue placeholder="Filter by date" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                <SelectItem value="all">All Time</SelectItem>
+                                <SelectItem value="week">This Week</SelectItem>
+                                <SelectItem value="month">This Month</SelectItem>
+                                <SelectItem value="year">This Year</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Select
+                                onValueChange={(value: "all" | ExpenseStatus) =>
+                                setStatusFilter(value)
+                                }
+                                defaultValue="all"
+                            >
+                                <SelectTrigger className="w-full sm:w-[160px]">
+                                <SelectValue placeholder="Filter by status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                <SelectItem value="all">All Statuses</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                                <SelectItem value="pending">Pending</SelectItem>
+                                <SelectItem value="upcoming">Upcoming</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            </div>
                         </div>
-                        <Select
-                            onValueChange={(value: "all" | "week" | "month" | "year") =>
-                            setDateFilter(value as any)
-                            }
-                            defaultValue="all"
-                        >
-                            <SelectTrigger className="w-full sm:w-[160px]">
-                            <SelectValue placeholder="Filter by date" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="all">All Time</SelectItem>
-                            <SelectItem value="week">This Week</SelectItem>
-                            <SelectItem value="month">This Month</SelectItem>
-                            <SelectItem value="year">This Year</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select
-                            onValueChange={(value: "all" | ExpenseStatus) =>
-                            setStatusFilter(value)
-                            }
-                            defaultValue="all"
-                        >
-                            <SelectTrigger className="w-full sm:w-[160px]">
-                            <SelectValue placeholder="Filter by status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="all">All Statuses</SelectItem>
-                            <SelectItem value="completed">Completed</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="upcoming">Upcoming</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        </div>
-                    </div>
-                     <div className="flex-1 overflow-y-auto no-scrollbar pb-8">
                         <ExpenseList
                             expenses={filteredExpenses}
                             onDelete={handleDeleteExpense}
@@ -324,7 +322,7 @@ export default function Home() {
                 </div>
 
                 {/* Sidebar */}
-                <div className="hidden md:block md:col-span-1 xl:col-span-1 h-full overflow-y-auto no-scrollbar pb-8">
+                <div className="hidden md:block md:col-span-1 xl:col-span-1 md:sticky md:top-24 self-start h-full space-y-6">
                     {sidebarContent}
                 </div>
             </div>
