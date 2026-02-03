@@ -138,8 +138,63 @@ export default function ExpenseForm({
   const categoryValue = form.watch("category");
   const { dirtyFields } = form.formState;
 
+  const handleSuggestCategory = async () => {
+    if (!titleValue || titleValue.length < 3) {
+      toast({
+        variant: "destructive",
+        title: "Title too short",
+        description: "Please enter a more descriptive title to get an AI suggestion.",
+      });
+      return;
+    }
+    if (!user.apiKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Required",
+        description: "Please add your Google AI API key in Settings to use this feature.",
+      });
+      return;
+    }
+    setIsCategorizing(true);
+    setAiSuggestedCategory(null);
+    setAiCategoryError(null);
+    const allCategories = [
+      ...expenseCategories,
+      ...(user.customCategories?.map(c => c.name) || [])
+    ];
+
+    try {
+      const result = await suggestCategory({ title: titleValue, categories: allCategories });
+      if (allCategories.includes(result.category)) {
+        form.setValue('category', result.category, { shouldDirty: true });
+        setAiSuggestedCategory(result.category);
+        toast({
+          title: "AI Suggestion",
+          description: `Category set to "${result.category}".`
+        });
+      }
+    } catch (error: any) {
+      console.error("Failed to suggest category", error);
+      const errorMessage = "AI suggestion failed. Check your API key or try again.";
+      setAiCategoryError(errorMessage);
+      toast({
+        variant: "destructive",
+        title: "AI Error",
+        description: errorMessage,
+      });
+    } finally {
+      setIsCategorizing(false);
+    }
+  };
+
   // Debounced effect for AI categorization
   useEffect(() => {
+    if (!user.autoSuggestCategory) {
+        setAiSuggestedCategory(null);
+        setAiCategoryError(null);
+        return;
+    }
+
     if (!titleValue) {
         setAiSuggestedCategory(null);
     }
@@ -181,7 +236,7 @@ export default function ExpenseForm({
     return () => {
         clearTimeout(handler);
     };
-  }, [titleValue, dirtyFields.category, form, user.customCategories, user.apiKey]);
+  }, [titleValue, dirtyFields.category, form, user.customCategories, user.apiKey, user.autoSuggestCategory]);
   
   useEffect(() => {
     if (dirtyFields.category && categoryValue !== aiSuggestedCategory) {
@@ -464,15 +519,25 @@ export default function ExpenseForm({
                     render={({ field }) => (
                         <FormItem>
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <FormLabel>Category</FormLabel>
-                                    {isCategorizing && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                                </div>
-                                {aiSuggestedCategory === field.value && !isCategorizing && (
-                                    <div className="flex items-center gap-1 text-xs text-primary animate-in fade-in-0">
-                                        <Sparkles className="h-3 w-3" />
-                                        <span>AI Suggested</span>
+                                <FormLabel>Category</FormLabel>
+                                {user.autoSuggestCategory && isCategorizing ? (
+                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                        <Loader2 className="h-3 w-3 animate-spin"/>
+                                        <span>Suggesting...</span>
                                     </div>
+                                ) : null}
+                                {!user.autoSuggestCategory && (
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="text-xs h-7 gap-1"
+                                        onClick={handleSuggestCategory}
+                                        disabled={isCategorizing || !titleValue || titleValue.length < 3}
+                                    >
+                                        {isCategorizing ? <Loader2 className="h-3 w-3 animate-spin"/> : <Sparkles className="h-3 w-3" />}
+                                        Suggest
+                                    </Button>
                                 )}
                             </div>
                         <Select onValueChange={field.onChange} value={field.value}>
@@ -505,6 +570,12 @@ export default function ExpenseForm({
                             )}
                             </SelectContent>
                         </Select>
+                        {aiSuggestedCategory && aiSuggestedCategory === field.value && !isCategorizing && (
+                            <div className="flex items-center gap-1 text-xs text-primary animate-in fade-in-0 pt-1">
+                                <Sparkles className="h-3 w-3" />
+                                <span>AI Suggested</span>
+                            </div>
+                        )}
                         {aiCategoryError && <p className="text-xs text-destructive pt-1">{aiCategoryError}</p>}
                         <FormMessage />
                         {budgetInfo && (

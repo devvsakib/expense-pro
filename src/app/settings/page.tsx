@@ -67,6 +67,7 @@ const profileFormSchema = z.object({
   defaultRecurrence: z.enum(recurrenceOptions).optional(),
   apiKey: z.string().optional(),
   ocrEngine: z.enum(ocrEngineOptions).optional(),
+  autoSuggestCategory: z.boolean().optional(),
 }).refine(data => (data.salary && data.salary > 0) ? !!data.salaryPassword : true, {
     message: "A password is required if you set a salary.",
     path: ["salaryPassword"],
@@ -132,6 +133,7 @@ export default function SettingsPage() {
               defaultRecurrence: parsedUser.defaultRecurrence || 'one-time',
               apiKey: parsedUser.apiKey || '',
               ocrEngine: parsedUser.ocrEngine || 'multimodal-ai',
+              autoSuggestCategory: parsedUser.autoSuggestCategory || false,
           });
         }
         const storedExpenses = localStorage.getItem('expense-tracker-expenses');
@@ -769,6 +771,28 @@ export default function SettingsPage() {
                                 </FormItem>
                               )}
                             />
+                            <FormField
+                                control={profileForm.control}
+                                name="autoSuggestCategory"
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                      <FormLabel className="text-base flex items-center gap-2">
+                                          <Bot /> Automatically Suggest Categories
+                                      </FormLabel>
+                                      <FormDescription>
+                                        If enabled, AI will suggest a category as you type an expense title.
+                                      </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                      <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                  </FormItem>
+                                )}
+                              />
                            <FormField
                               control={profileForm.control}
                               name="useMockAI"

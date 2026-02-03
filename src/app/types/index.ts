@@ -67,6 +67,7 @@ export type UserProfile = {
   defaultRecurrence?: Recurrence;
   apiKey?: string;
   ocrEngine?: OcrEngine;
+  autoSuggestCategory?: boolean;
 };
 
 export const importanceLevels = ["high", "medium", "low"] as const;

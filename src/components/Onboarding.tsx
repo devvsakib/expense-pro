@@ -89,7 +89,8 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
         customCategories: [],
         defaultStatus: 'completed',
         defaultRecurrence: 'one-time',
-        ocrEngine: values.ocrEngine || 'multimodal-ai'
+        ocrEngine: values.ocrEngine || 'multimodal-ai',
+        autoSuggestCategory: false
     } as UserProfile;
     onComplete(finalProfile);
   }
@@ -101,6 +102,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       defaultStatus: 'completed',
       defaultRecurrence: 'one-time',
       ocrEngine: 'multimodal-ai',
+      autoSuggestCategory: false
     } as UserProfile;
     onComplete(finalProfile);
   };
