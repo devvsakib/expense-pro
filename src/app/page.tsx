@@ -11,7 +11,7 @@ import ExpenseList from "@/components/ExpenseList";
 import ExpenseSummary from "@/components/ExpenseSummary";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Search, FileText, LayoutDashboard } from "lucide-react";
+import { PlusCircle, Search, FileText, LayoutDashboard, Upload } from "lucide-react";
 import ExpenseForm from "@/components/ExpenseForm";
 import { Input } from "@/components/ui/input";
 import {
@@ -32,6 +32,7 @@ import Onboarding from "@/components/Onboarding";
 import CategoryBudgets from "@/components/CategoryBudgets";
 import Link from "next/link";
 import BudgetProgress from "@/components/BudgetProgress";
+import ExpenseImportDialog from "@/components/ExpenseImportDialog";
 
 
 export default function Home() {
@@ -47,6 +48,7 @@ export default function Home() {
   const [dateFilter, setDateFilter] = useState<
     "all" | "week" | "month" | "year"
   >("all");
+  const [isImportOpen, setImportOpen] = useState(false);
   
   const { toast } = useToast();
 
@@ -118,6 +120,14 @@ export default function Home() {
 
   const handleDeleteExpense = (id: string) => {
     setExpenses(expenses.filter((expense) => expense.id !== id));
+  };
+  
+  const handleImportExpenses = (imported: Omit<Expense, 'id'>[]) => {
+    const newExpenses: Expense[] = imported.map(exp => ({
+        ...exp,
+        id: crypto.randomUUID(),
+    }));
+    setExpenses(prev => [...prev, ...newExpenses]);
   };
 
   const handleOnboardingComplete = (profile: UserProfile) => {
@@ -206,6 +216,13 @@ export default function Home() {
         expenses={expenses}
       />
       
+      <ExpenseImportDialog
+        isOpen={isImportOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImportExpenses}
+        userCategories={user.customCategories?.map(c => c.name) || []}
+      />
+
       <main className="flex-1 overflow-hidden">
         <div className="container mx-auto h-full flex flex-col px-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 py-8">
@@ -222,6 +239,9 @@ export default function Home() {
                       <Link href="/reports">
                           <FileText className="mr-2 h-4 w-4" /> View Reports
                       </Link>
+                    </Button>
+                    <Button variant="outline" className="w-full sm:w-auto" onClick={() => setImportOpen(true)}>
+                        <Upload className="mr-2 h-4 w-4" /> Import
                     </Button>
                     <Sheet>
                         <SheetTrigger asChild>
@@ -293,7 +313,7 @@ export default function Home() {
                         </Select>
                         </div>
                     </div>
-                     <div className="flex-1 overflow-y-auto no-scrollbar">
+                     <div className="flex-1 overflow-y-auto no-scrollbar pb-8">
                         <ExpenseList
                             expenses={filteredExpenses}
                             onDelete={handleDeleteExpense}

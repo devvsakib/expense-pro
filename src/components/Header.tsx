@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Settings, LayoutGrid, Wallet, PiggyBank, Repeat, CalendarDays, MessageCircle, FileText, Menu } from "lucide-react";
+import { Settings, LayoutGrid, Wallet, PiggyBank, Repeat, CalendarDays, MessageCircle, FileText, Menu, Upload } from "lucide-react";
 import { CompassIcon } from "./icons";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
