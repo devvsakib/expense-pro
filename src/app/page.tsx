@@ -289,7 +289,7 @@ export default function Home() {
                         </Select>
                         </div>
                     </div>
-                     <div className="flex-1 overflow-y-auto no-scrollbar">
+                     <div className="flex-1 overflow-y-auto no-scrollbar pb-8">
                         <ExpenseList
                             expenses={filteredExpenses}
                             onDelete={handleDeleteExpense}
@@ -300,7 +300,7 @@ export default function Home() {
                 </div>
 
                 {/* Sidebar */}
-                <div className="hidden md:block md:col-span-1 xl:col-span-1 h-full overflow-y-auto no-scrollbar">
+                <div className="hidden md:block md:col-span-1 xl:col-span-1 h-full overflow-y-auto no-scrollbar pb-8">
                     {sidebarContent}
                 </div>
             </div>
