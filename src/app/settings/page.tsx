@@ -304,9 +304,9 @@ export default function SettingsPage() {
         doc.setTextColor(100);
         doc.text(`Generated on: ${date}`, 14, 30);
         doc.text(`User: ${user.name}`, 14, 35);
-        doc.text(`Monthly Budget: ${getCurrencySymbol(user.currency)}${user.monthlyBudget.toLocaleString()}`, 14, 40);
+        doc.text(`Monthly Budget: ${user.monthlyBudget.toLocaleString()} ${user.currency}`, 14, 40);
 
-        const tableColumn = ["Date", "Title", "Category", "Amount"];
+        const tableColumn = ["Date", "Title", "Category", `Amount (${user.currency})`];
         const tableRows: (string | number)[][] = [];
 
         dataToExport.forEach(item => {
@@ -314,7 +314,7 @@ export default function SettingsPage() {
                 item.Date,
                 item.Title,
                 item.Category,
-                `${getCurrencySymbol(item.Currency)}${item.Amount.toFixed(2)}`
+                item.Amount.toFixed(2)
             ];
             tableRows.push(expenseData);
         });
