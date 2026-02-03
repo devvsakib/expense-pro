@@ -114,7 +114,8 @@ export type SavingsGoal = {
   id: string;
   name: string;
   amount: number;
-  plan: string; // The AI generated plan in Markdown
+  plan: string; // The AI generated plan or manual description
+  isAiGenerated: boolean;
   createdAt: string;
   contributions: Contribution[];
 };

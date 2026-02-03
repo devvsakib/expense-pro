@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { SavingsGoal, UserProfile, Expense, Contribution } from '@/app/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Eye, PiggyBank, FilePenLine, Trash2, Pencil, History, X } from 'lucide-react';
+import { PlusCircle, Loader2, Eye, PiggyBank, FilePenLine, Trash2, Pencil, History, X, Sparkles } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   Dialog,
@@ -46,11 +46,26 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const formSchema = z.object({
   goalName: z.string().min(3, "Please enter a name for your goal."),
   goalAmount: z.coerce.number().positive("Please enter a positive amount."),
+  creationMode: z.enum(['ai', 'manual']).optional(),
+  plan: z.string().optional(),
+}).refine(data => {
+    // Plan is required only if creationMode is 'manual'
+    if (data.creationMode === 'manual') {
+        return data.plan && data.plan.trim().length > 0;
+    }
+    return true;
+}, {
+    message: "A plan description is required when creating a goal manually.",
+    path: ["plan"],
 });
+
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -103,6 +118,7 @@ export default function SavingsPage() {
                 ...g,
                 createdAt: new Date(g.createdAt),
                 contributions: contributions,
+                isAiGenerated: g.isAiGenerated === undefined ? true : g.isAiGenerated, // Default old goals to AI generated
             };
         });
         setSavingsGoals(parsedGoals as any);
@@ -124,6 +140,8 @@ export default function SavingsPage() {
     defaultValues: {
       goalName: "",
       goalAmount: undefined,
+      creationMode: 'ai',
+      plan: '',
     },
   });
   
@@ -140,58 +158,73 @@ export default function SavingsPage() {
     setDialogMode(mode);
     if (mode === 'edit' && goal) {
         setGoalToEdit(goal);
-        form.reset({ goalName: goal.name, goalAmount: goal.amount });
+        form.reset({ goalName: goal.name, goalAmount: goal.amount, plan: goal.plan });
     } else {
         setGoalToEdit(null);
-        form.reset({ goalName: '', goalAmount: undefined });
+        form.reset({ goalName: '', goalAmount: undefined, creationMode: 'ai', plan: '' });
     }
   };
 
   const handleCreateOrUpdateGoal = async (values: FormValues) => {
       if (dialogMode === 'edit' && goalToEdit) {
-        setSavingsGoals(goals => goals.map(g => g.id === goalToEdit.id ? { ...g, name: values.goalName, amount: values.goalAmount } : g));
+        setSavingsGoals(goals => goals.map(g => g.id === goalToEdit.id ? { ...g, name: values.goalName, amount: values.goalAmount, plan: values.plan || g.plan } : g));
         toast({ title: "Goal Updated!", description: "Your savings goal has been updated." });
-    } else {
+    } else { // Create mode
         if (!user) return;
 
-        if (!user.apiKey) {
-            toast({
-                variant: "destructive",
-                title: "API Key Required",
-                description: "Please add your Google AI API key in the Settings page to use this feature.",
-            });
-            return;
-        }
-        
-        setIsGenerating(true);
-
-        const planInput = {
-            user: { name: user.name, monthlyBudget: user.monthlyBudget, currency: user.currency },
-            expenses: expenses.map((e) => ({ title: e.title, amount: e.amount, category: e.category, date: format(e.date, "yyyy-MM-dd") })),
-            goal: { name: values.goalName, amount: values.goalAmount },
-        };
-
-        try {
-            const result = await generateSavingsPlan(planInput);
+        if (values.creationMode === 'manual') {
             const newGoal: SavingsGoal = {
                 id: crypto.randomUUID(),
                 name: values.goalName,
                 amount: values.goalAmount,
-                plan: result.plan,
+                plan: values.plan || "No plan description provided.",
+                isAiGenerated: false,
                 createdAt: new Date().toISOString(),
                 contributions: [],
             };
             setSavingsGoals(prev => [newGoal, ...prev]);
-            toast({ title: "Savings Plan Created!", description: "Your new savings goal has been added." });
-        } catch (error: any) {
-            console.error("Failed to generate savings plan", error);
-            toast({
-                variant: "destructive",
-                title: "AI Error",
-                description: "The AI request failed. Please check if your API key is correct in Settings, or try again later.",
-            });
-        } finally {
-            setIsGenerating(false);
+            toast({ title: "Goal Created!", description: "Your new savings goal has been added." });
+        } else { // AI Mode
+            if (!user.apiKey) {
+                toast({
+                    variant: "destructive",
+                    title: "API Key Required",
+                    description: "Please add your Google AI API key in the Settings page to use this feature.",
+                });
+                return;
+            }
+            
+            setIsGenerating(true);
+
+            const planInput = {
+                user: { name: user.name, monthlyBudget: user.monthlyBudget, currency: user.currency },
+                expenses: expenses.map((e) => ({ title: e.title, amount: e.amount, category: e.category, date: format(e.date, "yyyy-MM-dd") })),
+                goal: { name: values.goalName, amount: values.goalAmount },
+            };
+
+            try {
+                const result = await generateSavingsPlan(planInput);
+                const newGoal: SavingsGoal = {
+                    id: crypto.randomUUID(),
+                    name: values.goalName,
+                    amount: values.goalAmount,
+                    plan: result.plan,
+                    isAiGenerated: true,
+                    createdAt: new Date().toISOString(),
+                    contributions: [],
+                };
+                setSavingsGoals(prev => [newGoal, ...prev]);
+                toast({ title: "Savings Plan Created!", description: "Your new savings goal has been added." });
+            } catch (error: any) {
+                console.error("Failed to generate savings plan", error);
+                toast({
+                    variant: "destructive",
+                    title: "AI Error",
+                    description: "The AI request failed. Please check if your API key is correct in Settings, or try again later.",
+                });
+            } finally {
+                setIsGenerating(false);
+            }
         }
     }
     setDialogMode(null);
@@ -289,7 +322,14 @@ export default function SavingsPage() {
                         <CardHeader>
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <CardTitle>{goal.name}</CardTitle>
+                                    <div className="flex items-center gap-2">
+                                        <CardTitle>{goal.name}</CardTitle>
+                                        {goal.isAiGenerated && (
+                                            <Badge variant="secondary" className="flex items-center gap-1.5 text-xs">
+                                                <Sparkles className="h-3 w-3 text-primary" /> AI Plan
+                                            </Badge>
+                                        )}
+                                    </div>
                                     <CardDescription>
                                         Goal: {currencySymbol}{(goal.amount || 0).toLocaleString()} &bull; Created on {format(new Date(goal.createdAt), 'MMM d, yyyy')}
                                     </CardDescription>
@@ -357,11 +397,14 @@ export default function SavingsPage() {
 
         {/* Create/Edit Goal Dialog */}
         <Dialog open={!!dialogMode} onOpenChange={(isOpen) => !isOpen && setDialogMode(null)}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{dialogMode === 'edit' ? 'Edit Savings Goal' : 'Create a New Savings Goal'}</DialogTitle>
                     <DialogDescription>
-                        {dialogMode === 'edit' ? 'Update the details of your savings goal.' : "Tell me what you're saving for, and I'll generate a plan for you."}
+                         {dialogMode === 'edit'
+                            ? 'Update the details and plan for your savings goal.'
+                            : "Choose how you'd like to create your goal."
+                        }
                     </DialogDescription>
                 </DialogHeader>
                  <Form {...form}>
@@ -369,6 +412,44 @@ export default function SavingsPage() {
                     onSubmit={form.handleSubmit(handleCreateOrUpdateGoal)}
                     className="space-y-4 pt-4"
                     >
+                    
+                    {dialogMode === 'create' && (
+                        <FormField
+                            control={form.control}
+                            name="creationMode"
+                            render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                <FormLabel>Creation Method</FormLabel>
+                                <FormControl>
+                                    <RadioGroup
+                                    onValueChange={field.onChange}
+                                    defaultValue={field.value}
+                                    className="flex flex-col space-y-1"
+                                    >
+                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="ai" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        Generate a savings plan with AI
+                                        </FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                        <RadioGroupItem value="manual" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        Create manually with my own plan
+                                        </FormLabel>
+                                    </FormItem>
+                                    </RadioGroup>
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                     )}
+
                     <FormField
                         control={form.control}
                         name="goalName"
@@ -406,12 +487,34 @@ export default function SavingsPage() {
                         </FormItem>
                         )}
                     />
+
+                    {(form.watch('creationMode') === 'manual' || dialogMode === 'edit') && (
+                        <FormField
+                            control={form.control}
+                            name="plan"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{dialogMode === 'edit' ? 'Plan / Description' : 'Describe your plan'}</FormLabel>
+                                <FormControl>
+                                    <Textarea
+                                        placeholder="e.g., Save $50 from each paycheck, cut down on eating out..."
+                                        className="resize-y min-h-[100px]"
+                                        {...field}
+                                        value={field.value ?? ""}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    )}
+
                     <DialogFooter>
                         <Button type="submit" className="w-full" disabled={isGenerating}>
                         {isGenerating ? (
                             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating...</>
                         ) : (
-                            dialogMode === 'edit' ? 'Save Changes' : 'Generate My Plan'
+                             dialogMode === 'edit' ? 'Save Changes' : (form.watch('creationMode') === 'ai' ? 'Generate My Plan' : 'Create Goal')
                         )}
                         </Button>
                     </DialogFooter>
