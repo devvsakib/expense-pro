@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import type { UserProfile, Expense } from '@/app/types';
+import type { UserProfile, Expense, ExpenseStatus } from '@/app/types';
 import Header from '@/components/Header';
 import Link from 'next/link';
-import { ArrowLeft, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateReport } from '@/ai/flows/ai-generate-report';
@@ -15,12 +16,15 @@ import ReportSummary from '@/components/ReportSummary';
 import ReportTrendChart from '@/components/ReportTrendChart';
 import CategoryPieChart from '@/components/CategoryPieChart';
 import TopCategories from '@/components/TopCategories';
+import { Input } from '@/components/ui/input';
 
 export default function ReportsPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'month' | 'year'>('month');
+  const [statusFilter, setStatusFilter] = useState<"all" | ExpenseStatus>('all');
   const [aiReport, setAiReport] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -57,8 +61,14 @@ export default function ReportsPage() {
           return isAfter(expenseDate, startOfYear(now));
         }
         return true;
-      });
-  }, [expenses, dateFilter, isClient]);
+      })
+      .filter((expense) =>
+        expense.title.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      .filter(
+        (expense) => statusFilter === "all" || expense.status === statusFilter
+      );
+  }, [expenses, dateFilter, isClient, searchQuery, statusFilter]);
 
   const handleGenerateReport = async () => {
     if (!user) return;
@@ -152,13 +162,22 @@ export default function ReportsPage() {
                 <p className="text-muted-foreground">Analyze your spending habits with data and AI.</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search expenses..."
+                        className="pl-9 w-full sm:w-[200px]"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                </div>
                 <Select
                     onValueChange={(value: "all" | "week" | "month" | "year") =>
                         setDateFilter(value)
                     }
                     defaultValue="month"
                 >
-                    <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue placeholder="Filter by date" />
                     </SelectTrigger>
                     <SelectContent>
@@ -166,6 +185,22 @@ export default function ReportsPage() {
                     <SelectItem value="week">This Week</SelectItem>
                     <SelectItem value="month">This Month</SelectItem>
                     <SelectItem value="year">This Year</SelectItem>
+                    </SelectContent>
+                </Select>
+                 <Select
+                    onValueChange={(value: "all" | ExpenseStatus) =>
+                        setStatusFilter(value)
+                    }
+                    defaultValue="all"
+                >
+                    <SelectTrigger className="w-full sm:w-[160px]">
+                    <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="upcoming">Upcoming</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
