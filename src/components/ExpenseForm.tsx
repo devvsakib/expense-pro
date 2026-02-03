@@ -394,7 +394,7 @@ export default function ExpenseForm({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-      <DialogContent className="sm:max-w-[600px] flex flex-col max-h-[90dvh] p-0">
+      <DialogContent className="w-96 sm:max-w-[600px] flex flex-col max-h-[90dvh] rounded-md sm:p-0">
         <DialogHeader className="p-6 pb-4">
           <DialogTitle>{expense ? "Edit Expense" : "Add New Expense"}</DialogTitle>
           <DialogDescription>

@@ -19,7 +19,7 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-card/60 px-5">
       <div className="container flex h-16 items-center max-w-6xl mx-auto">
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2">

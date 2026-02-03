@@ -70,7 +70,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
       salary: '',
       salaryPassword: "",
       apiKey: "",
-      ocrEngine: 'multimodal-ai',
+      ocrEngine: 'tesseract-ai',
     },
   });
 
