@@ -230,6 +230,18 @@ export default function Home() {
         >
             <Header />
 
+            {/* Floating Button for Add Expense */}
+
+            <div className="fixed bottom-10 right-5 z-50">
+                <span
+                    itemType="button"
+                    onClick={() => handleOpenForm()}
+                    className="whitespace-nowrap w-14 h-14 rounded-full md:hidden bg-primary text-primary-foreground flex items-center justify-center shadow-md shadow-primary hover:shadow-xl active:scale-95 transition-transform cursor-pointer"
+                >
+                    <PlusCircle size={34} className="text-2xl!" />
+                </span>
+            </div>
+
             <ExpenseForm
                 isOpen={isFormOpen}
                 onClose={handleCloseForm}
@@ -298,10 +310,10 @@ export default function Home() {
                             </Sheet>
                             <Button
                                 onClick={() => handleOpenForm()}
-                                className="whitespace-nowrap w-full sm:w-auto"
+                                className="whitespace-nowrap w-full sm:w-auto hidden md:inline-flex"
                             >
-                                <PlusCircle className="mr-2 h-4 w-4" />Add
-                                <span className="hidden sm:block">                                    Expense</span>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Add Expense
                             </Button>
                         </div>
                     </div>

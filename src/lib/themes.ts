@@ -104,19 +104,19 @@ export const themes: Theme[] = [
         name: "Midnight Dusk",
         mode: "dark",
         colors: {
-            background: "210 69.6% 12.2%", // #092635
-            foreground: "158 31.9% 90%", // Lighter #9EC8B9
-            card: "180 45.5% 18.2%", // #1B4242
+            background: "210 69.6% 12.2%",
+            foreground: "158 31.9% 90%",
+            card: "180 45.5% 18.2%",
             "card-foreground": "158 31.9% 90%",
             popover: "180 45.5% 18.2%",
             "popover-foreground": "158 31.9% 90%",
-            primary: "158 19.5% 43.7%", // #5C8374
+            primary: "158 19.5% 43.7%",
             "primary-foreground": "0 0% 98%",
-            secondary: "180 45.5% 15%", // Darker #1B4242
+            secondary: "180 45.5% 15%",
             "secondary-foreground": "158 31.9% 90%",
             muted: "180 45.5% 15%",
-            "muted-foreground": "158 19.5% 55%", // Lighter #5C8374
-            accent: "158 31.9% 70%", // #9EC8B9
+            "muted-foreground": "158 19.5% 55%",
+            accent: "158 31.9% 70%",
             "accent-foreground": "210 69.6% 12.2%",
             destructive: "0 62.8% 30.6%",
             "destructive-foreground": "0 0% 98%",
@@ -204,19 +204,19 @@ export const themes: Theme[] = [
         name: "Golden Premium",
         mode: "light",
         colors: {
-            background: "45 60% 96%", // soft ivory gold
-            foreground: "30 25% 15%", // deep warm brown
+            background: "45 60% 96%",
+            foreground: "30 25% 15%",
             card: "0 0% 100%",
             "card-foreground": "30 25% 15%",
             popover: "0 0% 100%",
             "popover-foreground": "30 25% 15%",
-            primary: "42 85% 45%", // rich gold
+            primary: "42 85% 45%",
             "primary-foreground": "0 0% 100%",
             secondary: "45 60% 92%",
             "secondary-foreground": "30 25% 20%",
             muted: "45 60% 92%",
             "muted-foreground": "30 15% 45%",
-            accent: "38 90% 55%", // accent gold (buttons, highlights)
+            accent: "38 90% 55%",
             "accent-foreground": "0 0% 100%",
             destructive: "0 84.2% 60.2%",
             "destructive-foreground": "0 0% 98%",
