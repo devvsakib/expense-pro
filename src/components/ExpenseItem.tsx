@@ -161,10 +161,7 @@ export default function ExpenseItem({ expense, onDelete, onEdit, currency, custo
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                    onSelect={(e) => {
-                      e.preventDefault();
-                      setDeleteDialogOpen(true);
-                    }}
+                    onSelect={() => setDeleteDialogOpen(true)}
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     <span>Delete</span>
@@ -187,7 +184,6 @@ export default function ExpenseItem({ expense, onDelete, onEdit, currency, custo
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               onDelete(expense.id);
-              setDeleteDialogOpen(false);
             }}>
               Delete
             </AlertDialogAction>
