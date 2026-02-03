@@ -22,7 +22,7 @@ import type { UserProfile, Currency, CustomCategory, Expense, CategoryBudget, Ex
 import { currencyOptions, expenseCategories, expenseStatuses, recurrenceOptions, ocrEngineOptions } from '@/app/types';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download, Target, Bot, Settings as SettingsIcon } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download, Target, Bot, Settings as SettingsIcon, Tag } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   AlertDialog,
@@ -369,7 +369,7 @@ export default function SettingsPage() {
             <ThemeSwitcher />
             <Card>
               <CardHeader>
-                <CardTitle>Profile Settings</CardTitle>
+                <CardTitle className="flex items-center gap-2"><SettingsIcon /> Profile Settings</CardTitle>
                 <CardDescription>Manage your profile and application settings.</CardDescription>
               </CardHeader>
               <CardContent>
@@ -428,7 +428,7 @@ export default function SettingsPage() {
                         />
                     </div>
                     <Separator />
-                    <CardTitle className="text-lg">Salary Settings</CardTitle>
+                    <CardTitle className="text-lg pt-2">Salary Settings</CardTitle>
                      <div className="grid grid-cols-2 gap-4">
                         <FormField
                           control={profileForm.control}
@@ -525,7 +525,7 @@ export default function SettingsPage() {
 
              <Card>
               <CardHeader>
-                <CardTitle>Category Budgets</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Target /> Category Budgets</CardTitle>
                 <CardDescription>Set spending limits for specific categories.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -533,7 +533,6 @@ export default function SettingsPage() {
                   {(user.categoryBudgets || []).map(budget => (
                     <div key={budget.category} className="flex items-center justify-between p-2 rounded-md border">
                         <div className="flex items-center gap-3">
-                           <Target className="w-4 h-4 text-muted-foreground"/>
                            <span className="font-medium">{budget.category}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -637,7 +636,7 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Custom Categories</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Tag /> Custom Categories</CardTitle>
                 <CardDescription>Create and manage your own spending categories.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -743,25 +742,25 @@ export default function SettingsPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Data Export</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Download /> Data Export</CardTitle>
                 <CardDescription>Download all your expense data in various formats.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col sm:flex-row gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => handleExport('csv')}>
-                    <Download className="mr-2"/> Export as CSV
+                    Export as CSV
                 </Button>
                 <Button variant="outline" className="flex-1" onClick={() => handleExport('txt')}>
-                    <Download className="mr-2"/> Export as TXT
+                    Export as TXT
                 </Button>
                 <Button variant="outline" className="flex-1" onClick={() => handleExport('pdf')}>
-                    <Download className="mr-2"/> Export as PDF
+                    Export as PDF
                 </Button>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                  <CardTitle>AI &amp; Developer Settings</CardTitle>
+                  <CardTitle className="flex items-center gap-2"><Bot /> AI &amp; Developer Settings</CardTitle>
                   <CardDescription>Manage your AI API key and other development options.</CardDescription>
               </CardHeader>
               <CardContent>
@@ -789,8 +788,8 @@ export default function SettingsPage() {
                                 render={({ field }) => (
                                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                     <div className="space-y-0.5">
-                                      <FormLabel className="text-base flex items-center gap-2">
-                                          <Bot /> Automatically Suggest Categories
+                                      <FormLabel className="text-base">
+                                          Automatically Suggest Categories
                                       </FormLabel>
                                       <FormDescription>
                                         If enabled, AI will suggest a category as you type an expense title.
@@ -811,8 +810,8 @@ export default function SettingsPage() {
                               render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                   <div className="space-y-0.5">
-                                    <FormLabel className="text-base flex items-center gap-2">
-                                        <Bot /> Use Mock AI for Receipt Scanning
+                                    <FormLabel className="text-base">
+                                        Use Mock AI for Receipt Scanning
                                     </FormLabel>
                                     <FormDescription>
                                       Enable this to use simulated AI responses instead of real ones. (Multimodal AI only)
@@ -831,13 +830,13 @@ export default function SettingsPage() {
                                 control={profileForm.control}
                                 name="ocrEngine"
                                 render={({ field }) => (
-                                    <FormItem className="space-y-3">
-                                    <FormLabel>Receipt OCR Engine</FormLabel>
+                                    <FormItem className="space-y-3 p-4 border rounded-lg">
+                                    <FormLabel className="text-base">Receipt OCR Engine</FormLabel>
                                     <FormControl>
                                         <RadioGroup
                                         onValueChange={field.onChange}
                                         defaultValue={field.value}
-                                        className="flex flex-col space-y-1"
+                                        className="flex flex-col space-y-2 pt-2"
                                         >
                                         <FormItem className="flex items-center space-x-3 space-y-0">
                                             <FormControl>
