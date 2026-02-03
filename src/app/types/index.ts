@@ -104,13 +104,19 @@ export type TaskOutput = {
   reasoning: string;
 };
 
+export type Contribution = {
+  id: string;
+  amount: number;
+  date: string;
+};
+
 export type SavingsGoal = {
   id: string;
   name: string;
   amount: number;
-  currentAmount: number;
   plan: string; // The AI generated plan in Markdown
   createdAt: string;
+  contributions: Contribution[];
 };
 
 export type ChatMessage = {
