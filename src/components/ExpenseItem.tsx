@@ -105,7 +105,7 @@ export default function ExpenseItem({ expense, onDelete, onEdit, currency, custo
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
-                <span>{format(expense.date, "MMM d, yyyy")}</span>
+                <span>{format(new Date(expense.date), "MMM d, yyyy")}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Tag className="h-3.5 w-3.5" />
@@ -185,7 +185,10 @@ export default function ExpenseItem({ expense, onDelete, onEdit, currency, custo
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => onDelete(expense.id)}>
+            <AlertDialogAction onClick={() => {
+              onDelete(expense.id);
+              setDeleteDialogOpen(false);
+            }}>
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>

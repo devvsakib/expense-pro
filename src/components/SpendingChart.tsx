@@ -30,10 +30,10 @@ export default function SpendingChart({ expenses, currency }: SpendingChartProps
     const today = startOfToday();
     const last7DaysInterval = {
       start: subDays(today, 6),
-      end: today,
+      end: new Date(), // Use new Date() to include all of today
     };
 
-    const relevantExpenses = expenses.filter(e => isWithinInterval(e.date, last7DaysInterval));
+    const relevantExpenses = expenses.filter(e => isWithinInterval(new Date(e.date), last7DaysInterval));
     
     const dailySpending = Array.from({ length: 7 }, (_, i) => {
       const day = subDays(today, i);
