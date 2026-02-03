@@ -1,31 +1,23 @@
+
 import type { Expense, UserProfile } from "@/app/types";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription
 } from "@/components/ui/card";
 import { Hourglass, CalendarClock, Repeat } from "lucide-react";
 import { getCurrencySymbol } from "@/lib/utils";
 import SalaryCard from "./SalaryCard";
-import { Progress } from "@/components/ui/progress";
 
-interface BudgetOverviewProps {
+interface ExpenseSummaryProps {
   user: UserProfile;
   expenses: Expense[];
 }
 
-export default function ExpenseSummary({ user, expenses }: BudgetOverviewProps) {
-  const { monthlyBudget: budget, currency } = user;
+export default function ExpenseSummary({ user, expenses }: ExpenseSummaryProps) {
+  const { currency } = user;
   const currencySymbol = getCurrencySymbol(currency);
-  
-  const spent = expenses.reduce(
-    (sum, expense) => expense.status === 'completed' ? sum + expense.amount : sum,
-    0
-  );
-  const remaining = budget - spent;
-  const budgetProgress = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0;
   
   const pendingExpenses = expenses.filter(e => e.status === 'pending');
   const pendingCount = pendingExpenses.length;
@@ -56,26 +48,6 @@ export default function ExpenseSummary({ user, expenses }: BudgetOverviewProps) 
 
   return (
     <div className="grid grid-cols-1 gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Monthly Budget</CardTitle>
-          <CardDescription>
-            Your spending progress vs. your budget of {currencySymbol}{budget.toLocaleString()}.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-              <Progress value={budgetProgress} className="h-2"/>
-              <div className="flex justify-between text-sm">
-                  <div className="font-medium">Spent: <span className="font-mono">{currencySymbol}{spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2})}</span></div>
-                  <div className={`font-medium ${remaining < 0 ? 'text-destructive' : ''}`}>
-                    Remaining: <span className="font-mono">{currencySymbol}{remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                  </div>
-              </div>
-          </div>
-        </CardContent>
-      </Card>
-      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

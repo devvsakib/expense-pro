@@ -31,6 +31,7 @@ import CategoryPieChart from "@/components/CategoryPieChart";
 import Onboarding from "@/components/Onboarding";
 import CategoryBudgets from "@/components/CategoryBudgets";
 import Link from "next/link";
+import BudgetProgress from "@/components/BudgetProgress";
 
 
 export default function Home() {
@@ -238,9 +239,12 @@ export default function Home() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-8 flex-1 overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-8 flex-1 overflow-hidden pb-8">
                 {/* Main Content */}
                 <div className="md:col-span-2 xl:col-span-3 h-full flex flex-col">
+                    <div className="mb-8">
+                      <BudgetProgress user={user} expenses={filteredExpenses} />
+                    </div>
                     <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                         <h2 className="text-2xl font-bold tracking-tight self-start">
                         Your Expenses
@@ -289,7 +293,7 @@ export default function Home() {
                         </Select>
                         </div>
                     </div>
-                     <div className="flex-1 overflow-y-auto no-scrollbar pb-8">
+                     <div className="flex-1 overflow-y-auto no-scrollbar">
                         <ExpenseList
                             expenses={filteredExpenses}
                             onDelete={handleDeleteExpense}
