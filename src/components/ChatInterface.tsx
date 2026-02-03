@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -10,6 +11,7 @@ import { Send, Sparkles, Loader2 } from 'lucide-react';
 import { financialChat } from '@/ai/flows/ai-financial-chat';
 import { CompassIcon } from './icons';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 interface ChatInterfaceProps {
   user: UserProfile;
@@ -26,6 +28,7 @@ export default function ChatInterface({ user, expenses }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -39,6 +42,15 @@ export default function ChatInterface({ user, expenses }: ChatInterfaceProps) {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
+
+    if (!user.apiKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Required",
+        description: "Please add your Google AI API key in the Settings page to use the chat feature.",
+      });
+      return;
+    }
 
     const newMessages: ChatMessage[] = [...messages, { role: 'user', content: input }];
     setMessages(newMessages);
@@ -57,9 +69,10 @@ export default function ChatInterface({ user, expenses }: ChatInterfaceProps) {
         messages: newMessages.slice(-10), // Send last 10 messages for context
       });
       setMessages(prev => [...prev, { role: 'assistant', content: result.response }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('AI chat error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I encountered an error. Please try again." }]);
+      const errorMessage = "The AI request failed. Please check if your API key is correct in Settings, or try again later.";
+      setMessages(prev => [...prev, { role: 'assistant', content: errorMessage }]);
     } finally {
       setIsLoading(false);
     }

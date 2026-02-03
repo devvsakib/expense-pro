@@ -11,6 +11,7 @@ import { Sparkles, Loader2, ListTodo, Wallet, CheckCircle2, Circle, CalendarX2 }
 import { generateCalendarSummary } from '@/ai/flows/ai-generate-calendar-summary';
 import { getCurrencySymbol } from '@/lib/utils';
 import { Badge } from './ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 interface CalendarDayDetailsProps {
   selectedDate: Date;
@@ -23,12 +24,22 @@ export default function CalendarDayDetails({ selectedDate, expenses, tasks, user
   const [aiSummary, setAiSummary] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const currencySymbol = getCurrencySymbol(user.currency);
+  const { toast } = useToast();
 
   const totalExpenses = useMemo(() => {
     return expenses.reduce((total, expense) => total + expense.amount, 0);
   }, [expenses]);
 
   const handleGenerateSummary = async () => {
+    if (!user.apiKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Required",
+        description: "Please add your Google AI API key in the Settings page to use this feature.",
+      });
+      return;
+    }
+    
     setIsGenerating(true);
     setAiSummary('');
 
@@ -40,9 +51,10 @@ export default function CalendarDayDetails({ selectedDate, expenses, tasks, user
         currencySymbol,
       });
       setAiSummary(result.summary);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to generate summary', error);
-      setAiSummary('Sorry, I couldn\'t generate a summary right now. Please try again later.');
+      const errorMessage = "The AI request failed. Please check if your API key is correct in Settings, or try again later.";
+      setAiSummary(errorMessage);
     } finally {
       setIsGenerating(false);
     }

@@ -117,6 +117,16 @@ export default function SavingsPage() {
 
   const handleGeneratePlan = async (values: FormValues) => {
     if (!user) return;
+
+    if (!user.apiKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Required",
+        description: "Please add your Google AI API key in the Settings page to use this feature.",
+      });
+      return;
+    }
+    
     setIsGenerating(true);
 
     const planInput = {
@@ -151,12 +161,12 @@ export default function SavingsPage() {
       toast({ title: "Savings Plan Created!", description: "Your new savings goal has been added." });
       setCreateDialogOpen(false);
       form.reset();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to generate savings plan", error);
       toast({
         variant: "destructive",
         title: "AI Error",
-        description: "Could not generate a plan. This may be due to a request limit. Please try again later.",
+        description: "The AI request failed. Please check if your API key is correct in Settings, or try again later.",
       });
     } finally {
       setIsGenerating(false);

@@ -62,8 +62,15 @@ export default function ReportsPage() {
 
   const handleGenerateReport = async () => {
     if (!user) return;
-    setIsGenerating(true);
-    setAiReport('');
+
+    if (!user.apiKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Required",
+        description: "Please add your Google AI API key in the Settings page to use this feature.",
+      });
+      return;
+    }
     
     if (filteredExpenses.length === 0) {
         toast({
@@ -71,9 +78,11 @@ export default function ReportsPage() {
             title: "No Data",
             description: "There are no expenses in the selected period to generate a report.",
         });
-        setIsGenerating(false);
         return;
     }
+
+    setIsGenerating(true);
+    setAiReport('');
 
     const reportInput = {
       user: {
@@ -92,15 +101,16 @@ export default function ReportsPage() {
     try {
       const result = await generateReport(reportInput);
       setAiReport(result.report);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to generate report", error);
+      const description = "The AI request failed. Please check if your API key is correct in Settings, or try again later.";
       setAiReport(
-        "**AI Report Failed**\n\nSorry, I couldn't generate the report. This might be due to reaching a request limit. Please try again later."
+        `**AI Report Failed**\n\n${description}`
       );
        toast({
             variant: "destructive",
             title: "AI Report Failed",
-            description: "Sorry, I couldn't generate the report. Please try again later.",
+            description: description,
         });
     } finally {
       setIsGenerating(false);

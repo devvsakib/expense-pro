@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Task, TaskInput, TaskOutput } from '@/app/types';
+import type { Task, TaskInput, TaskOutput, UserProfile } from '@/app/types';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,6 +40,7 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 
 export default function PlannerPage() {
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [isAiModalOpen, setAiModalOpen] = useState(false);
@@ -50,6 +51,9 @@ export default function PlannerPage() {
   useEffect(() => {
     setIsClient(true);
     try {
+      const storedUser = localStorage.getItem('expense-tracker-user');
+      if (storedUser) setUser(JSON.parse(storedUser));
+
       const storedTasks = localStorage.getItem('task-planner-tasks');
       if (storedTasks) {
         const parsedTasks = JSON.parse(storedTasks).map((task: any) => ({
@@ -59,7 +63,8 @@ export default function PlannerPage() {
         setTasks(parsedTasks);
       }
     } catch (error) {
-      console.error('Failed to load tasks from localStorage', error);
+      console.error('Failed to load data from localStorage', error);
+      localStorage.removeItem('expense-tracker-user');
       localStorage.removeItem('task-planner-tasks');
     }
   }, []);
@@ -108,6 +113,15 @@ export default function PlannerPage() {
   };
 
   const handlePrioritizeTasks = async () => {
+    if (!user?.apiKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Required",
+        description: "Please add your Google AI API key in the Settings page to use this feature.",
+      });
+      return;
+    }
+    
     if (tasks.filter(t => !t.completed).length < 2) {
       toast({
         variant: "destructive",
@@ -135,12 +149,12 @@ export default function PlannerPage() {
     try {
       const result = await prioritizeTasks(taskInput);
       setAiResponse(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to prioritize tasks", error);
       toast({
         variant: "destructive",
         title: "AI Error",
-        description: "Could not prioritize tasks. This might be due to a request limit. Please try again later.",
+        description: "The AI request failed. Please check if your API key is correct in Settings, or try again later.",
       });
       setAiModalOpen(false);
     } finally {

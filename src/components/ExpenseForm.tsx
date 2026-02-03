@@ -150,6 +150,10 @@ export default function ExpenseForm({
 
     const handler = setTimeout(async () => {
         if (titleValue && titleValue.length > 3) {
+            if (!user.apiKey) {
+                setAiCategoryError("An API key is required for AI suggestions.");
+                return;
+            }
             setIsCategorizing(true);
             setAiSuggestedCategory(null);
             setAiCategoryError(null);
@@ -164,9 +168,10 @@ export default function ExpenseForm({
                     form.setValue('category', result.category);
                     setAiSuggestedCategory(result.category);
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to suggest category", error);
-                setAiCategoryError("AI suggestion failed. Please choose a category.");
+                const errorMessage = "AI suggestion failed. Check your API key or try again.";
+                setAiCategoryError(errorMessage);
             } finally {
                 setIsCategorizing(false);
             }
@@ -176,7 +181,7 @@ export default function ExpenseForm({
     return () => {
         clearTimeout(handler);
     };
-  }, [titleValue, dirtyFields.category, form, user.customCategories]);
+  }, [titleValue, dirtyFields.category, form, user.customCategories, user.apiKey]);
   
   useEffect(() => {
     if (dirtyFields.category && categoryValue !== aiSuggestedCategory) {
@@ -232,6 +237,16 @@ export default function ExpenseForm({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (!user.useMockAI && !user.apiKey) {
+      toast({
+        variant: "destructive",
+        title: "API Key Required",
+        description: "AI receipt scanning requires an API key. Please add one in Settings or enable Mock AI.",
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setIsScanning(true);
     setScanProgress(null);
     const allCategories = [
@@ -259,7 +274,7 @@ export default function ExpenseForm({
         toast({
             variant: "destructive",
             title: "Scan Failed",
-            description: "Could not extract details from the receipt. This might be due to a request limit.",
+            description: "The AI request failed. Please check if your API key is correct in Settings, or try again later.",
         });
     };
 
