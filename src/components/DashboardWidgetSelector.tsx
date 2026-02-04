@@ -13,9 +13,7 @@ interface DashboardWidgetSelectorProps {
 
 const widgetConfig: { id: WidgetKey; label: string; description: string }[] = [
   { id: 'budgetProgress', label: 'Budget Progress', description: 'Your overall monthly budget tracking.' },
-  { id: 'pendingSummary', label: 'Pending Summary', description: 'Summary of expenses marked as pending.' },
-  { id: 'upcomingSummary', label: 'Upcoming Summary', description: 'Summary of expenses marked as upcoming.' },
-  { id: 'recurringSummary', label: 'Recurring Summary', description: 'Estimated monthly cost of recurring expenses.' },
+  { id: 'expenseSummary', label: 'Expense Summaries', description: 'Cards for pending, upcoming, and recurring costs.' },
   { id: 'categoryBudgets', label: 'Category Budgets', description: 'Track spending against specific category limits.' },
   { id: 'spendingChart', label: '7-Day Spending Trend', description: 'A bar chart of your spending over the last week.' },
   { id: 'categoryPieChart', label: 'Category Breakdown', description: 'A pie chart of your spending distribution.' },

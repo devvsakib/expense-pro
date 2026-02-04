@@ -73,21 +73,18 @@ export default function Home() {
             if (storedUser) {
                 const parsedUser = JSON.parse(storedUser);
 
-                // Migration for widgets
-                if (parsedUser.dashboardWidgets && typeof parsedUser.dashboardWidgets.expenseSummary !== 'undefined') {
-                    const summaryEnabled = parsedUser.dashboardWidgets.expenseSummary;
-                    parsedUser.dashboardWidgets.pendingSummary = summaryEnabled;
-                    parsedUser.dashboardWidgets.upcomingSummary = summaryEnabled;
-                    parsedUser.dashboardWidgets.recurringSummary = summaryEnabled;
-                    delete parsedUser.dashboardWidgets.expenseSummary;
+                // Migration from separate summaries back to a single one
+                if (parsedUser.dashboardWidgets && typeof parsedUser.dashboardWidgets.pendingSummary !== 'undefined') {
+                    parsedUser.dashboardWidgets.expenseSummary = parsedUser.dashboardWidgets.pendingSummary;
+                    delete parsedUser.dashboardWidgets.pendingSummary;
+                    delete parsedUser.dashboardWidgets.upcomingSummary;
+                    delete parsedUser.dashboardWidgets.recurringSummary;
                 }
                 
                 if (!parsedUser.dashboardWidgets) {
                     parsedUser.dashboardWidgets = {
                         budgetProgress: true,
-                        pendingSummary: true,
-                        upcomingSummary: true,
-                        recurringSummary: true,
+                        expenseSummary: true,
                         categoryBudgets: true,
                         spendingChart: true,
                         categoryPieChart: false,
@@ -274,11 +271,17 @@ export default function Home() {
         return <Onboarding onComplete={handleOnboardingComplete} />;
     }
 
-    const widgetComponents: Record<WidgetKey, { component: React.ElementType, props: any }> = {
+    const ExpenseSummaries = () => (
+        <>
+            <ExpenseSummary user={user} expenses={expenses} type="pending" />
+            <ExpenseSummary user={user} expenses={expenses} type="upcoming" />
+            <ExpenseSummary user={user} expenses={expenses} type="recurring" />
+        </>
+    );
+
+    const widgetComponents: Record<WidgetKey, { component: React.ElementType, props?: any }> = {
       budgetProgress: { component: BudgetProgress, props: { user, expenses: currentMonthExpenses } },
-      pendingSummary: { component: ExpenseSummary, props: { user, expenses: expenses, type: 'pending' } },
-      upcomingSummary: { component: ExpenseSummary, props: { user, expenses: expenses, type: 'upcoming' } },
-      recurringSummary: { component: ExpenseSummary, props: { user, expenses: expenses, type: 'recurring' } },
+      expenseSummary: { component: ExpenseSummaries },
       categoryBudgets: { component: CategoryBudgets, props: { user, expenses: currentMonthExpenses } },
       spendingChart: { component: SpendingChart, props: { expenses: expenses, currency: user.currency } },
       categoryPieChart: { component: CategoryPieChart, props: { expenses: expenses, currency: user.currency, customCategories: user.customCategories || [] } },
@@ -387,7 +390,7 @@ export default function Home() {
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                 {enabledWidgets.map(widgetKey => {
                                     const Widget = widgetComponents[widgetKey].component;
-                                    const props = widgetComponents[widgetKey].props;
+                                    const props = widgetComponents[widgetKey].props || {};
                                     return <Widget key={widgetKey} {...props} />;
                                 })}
                             </div>
