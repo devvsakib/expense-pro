@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -44,6 +45,7 @@ import Link from "next/link";
 import BudgetProgress from "@/components/BudgetProgress";
 import ExpenseImportDialog from "@/components/ExpenseImportDialog";
 import DashboardWidgetSelector from "@/components/DashboardWidgetSelector";
+import { cn } from "@/lib/utils";
 
 
 export default function Home() {
@@ -272,11 +274,11 @@ export default function Home() {
     }
 
     const ExpenseSummaries = () => (
-        <>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <ExpenseSummary user={user} expenses={expenses} type="pending" />
             <ExpenseSummary user={user} expenses={expenses} type="upcoming" />
             <ExpenseSummary user={user} expenses={expenses} type="recurring" />
-        </>
+        </div>
     );
 
     const widgetComponents: Record<WidgetKey, { component: React.ElementType, props?: any }> = {
@@ -391,7 +393,13 @@ export default function Home() {
                                 {enabledWidgets.map(widgetKey => {
                                     const Widget = widgetComponents[widgetKey].component;
                                     const props = widgetComponents[widgetKey].props || {};
-                                    return <Widget key={widgetKey} {...props} />;
+                                    const isSummary = widgetKey === 'expenseSummary';
+                                    
+                                    return (
+                                        <div key={widgetKey} className={cn(isSummary && 'md:col-span-2 xl:col-span-3')}>
+                                            <Widget {...props} />
+                                        </div>
+                                    );
                                 })}
                             </div>
                         )}
