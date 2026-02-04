@@ -54,6 +54,8 @@ export type CategoryBudget = {
 export const ocrEngineOptions = ['multimodal-ai', 'tesseract-ai'] as const;
 export type OcrEngine = (typeof ocrEngineOptions)[number];
 
+export type WidgetKey = 'budgetProgress' | 'expenseSummary' | 'categoryBudgets' | 'spendingChart' | 'categoryPieChart';
+
 export type UserProfile = {
   name: string;
   monthlyBudget: number;
@@ -68,6 +70,7 @@ export type UserProfile = {
   apiKey?: string;
   ocrEngine?: OcrEngine;
   autoSuggestCategory?: boolean;
+  dashboardWidgets?: Record<WidgetKey, boolean>;
 };
 
 export const importanceLevels = ["high", "medium", "low"] as const;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import type { Expense, ExpenseStatus, UserProfile } from "@/app/types";
+import type { Expense, ExpenseStatus, UserProfile, WidgetKey } from "@/app/types";
 import {
     format,
     startOfWeek,
@@ -20,8 +20,8 @@ import {
     PlusCircle,
     Search,
     FileText,
-    LayoutDashboard,
     Upload,
+    LayoutGrid,
 } from "lucide-react";
 import ExpenseForm from "@/components/ExpenseForm";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import SpendingChart from "@/components/SpendingChart";
 import CategoryPieChart from "@/components/CategoryPieChart";
 import Onboarding from "@/components/Onboarding";
@@ -40,6 +40,8 @@ import CategoryBudgets from "@/components/CategoryBudgets";
 import Link from "next/link";
 import BudgetProgress from "@/components/BudgetProgress";
 import ExpenseImportDialog from "@/components/ExpenseImportDialog";
+import DashboardWidgetSelector from "@/components/DashboardWidgetSelector";
+
 
 export default function Home() {
     const [user, setUser] = useState<UserProfile | null>(null);
@@ -55,6 +57,7 @@ export default function Home() {
         "all" | "week" | "month" | "year"
     >("all");
     const [isImportOpen, setImportOpen] = useState(false);
+    const [isWidgetSelectorOpen, setWidgetSelectorOpen] = useState(false);
 
     const { toast } = useToast();
 
@@ -64,7 +67,17 @@ export default function Home() {
         try {
             const storedUser = localStorage.getItem("expense-tracker-user");
             if (storedUser) {
-                setUser(JSON.parse(storedUser));
+                const parsedUser = JSON.parse(storedUser);
+                if (!parsedUser.dashboardWidgets) {
+                    parsedUser.dashboardWidgets = {
+                        budgetProgress: true,
+                        expenseSummary: true,
+                        categoryBudgets: true,
+                        spendingChart: true,
+                        categoryPieChart: true,
+                    };
+                }
+                setUser(parsedUser);
             }
 
             const storedExpenses = localStorage.getItem(
@@ -85,6 +98,17 @@ export default function Home() {
             localStorage.removeItem("expense-tracker-expenses");
         }
     }, []);
+
+    // Save user profile to localStorage
+    useEffect(() => {
+        if (isClient && user) {
+            try {
+                localStorage.setItem("expense-tracker-user", JSON.stringify(user));
+            } catch (error) {
+                console.error("Failed to save user to localStorage", error);
+            }
+        }
+    }, [user, isClient]);
 
     // Save expenses to localStorage
     useEffect(() => {
@@ -145,8 +169,20 @@ export default function Home() {
 
     const handleOnboardingComplete = (profile: UserProfile) => {
         setUser(profile);
-        localStorage.setItem("expense-tracker-user", JSON.stringify(profile));
     };
+
+    const handleWidgetToggle = (widget: WidgetKey, enabled: boolean) => {
+        if (!user) return;
+        const updatedUser = {
+            ...user,
+            dashboardWidgets: {
+                ...user.dashboardWidgets,
+                [widget]: enabled,
+            }
+        };
+        setUser(updatedUser);
+    };
+
 
     const filteredExpenses = useMemo(() => {
         const now = new Date();
@@ -207,21 +243,17 @@ export default function Home() {
         return <Onboarding onComplete={handleOnboardingComplete} />;
     }
 
-    const sidebarContent = (
-        <div className="space-y-6">
-            {/* <ExpenseSummary user={user} expenses={filteredExpenses} showSalaryInfo={true} /> */}
-            <CategoryBudgets user={user} expenses={filteredExpenses} />
-            <SpendingChart
-                expenses={filteredExpenses}
-                currency={user.currency}
-            />
-            <CategoryPieChart
-                expenses={filteredExpenses}
-                currency={user.currency}
-                customCategories={user.customCategories || []}
-            />
-        </div>
-    );
+    const widgetComponents: Record<WidgetKey, { component: React.ElementType, props: any }> = {
+      budgetProgress: { component: BudgetProgress, props: { user, expenses: filteredExpenses } },
+      expenseSummary: { component: ExpenseSummary, props: { user, expenses: filteredExpenses, showSalaryInfo: false } },
+      categoryBudgets: { component: CategoryBudgets, props: { user, expenses: filteredExpenses } },
+      spendingChart: { component: SpendingChart, props: { expenses: filteredExpenses, currency: user.currency } },
+      categoryPieChart: { component: CategoryPieChart, props: { expenses: filteredExpenses, currency: user.currency, customCategories: user.customCategories || [] } },
+    };
+
+    const enabledWidgets = Object.keys(widgetComponents).filter(
+        key => user.dashboardWidgets?.[key as WidgetKey]
+    ) as WidgetKey[];
 
     return (
         <div
@@ -231,7 +263,6 @@ export default function Home() {
             <Header />
 
             {/* Floating Button for Add Expense */}
-
             <div className="fixed bottom-10 right-5 z-50">
                 <span
                     itemType="button"
@@ -257,6 +288,12 @@ export default function Home() {
                 onImport={handleImportExpenses}
                 userCategories={user.customCategories?.map((c) => c.name) || []}
             />
+            
+            <Sheet open={isWidgetSelectorOpen} onOpenChange={setWidgetSelectorOpen}>
+                <SheetContent>
+                    <DashboardWidgetSelector user={user} onWidgetToggle={handleWidgetToggle} />
+                </SheetContent>
+            </Sheet>
 
             <main className="flex-1">
                 <div className="container mx-auto px-4">
@@ -292,22 +329,16 @@ export default function Home() {
                                     Import Expenses
                                 </span>
                             </Button>
-                            <Sheet>
-                                <SheetTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className="w-full sm:w-auto md:hidden"
-                                    >
-                                        <LayoutDashboard className="mr-2 h-4 w-4" />{" "}
-                                        <span className="hidden sm:block">
-                                            View Summary
-                                        </span>
-                                    </Button>
-                                </SheetTrigger>
-                                <SheetContent className="sm:max-w-sm overflow-y-auto p-0">
-                                    <div className="p-6">{sidebarContent}</div>
-                                </SheetContent>
-                            </Sheet>
+                             <Button
+                                variant="outline"
+                                className="w-full sm:w-auto"
+                                onClick={() => setWidgetSelectorOpen(true)}
+                            >
+                                <LayoutGrid className="mr-2 h-4 w-4" />{" "}
+                                <span className="hidden sm:block">
+                                    Customize Widgets
+                                </span>
+                            </Button>
                             <Button
                                 onClick={() => handleOpenForm()}
                                 className="whitespace-nowrap w-full sm:w-auto hidden md:inline-flex"
@@ -318,103 +349,96 @@ export default function Home() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-8 pb-8">
-                        {/* Main Content */}
-                        <div className="md:col-span-2 xl:col-span-3 flex flex-col gap-4">
-                            <BudgetProgress
-                                user={user}
-                                expenses={filteredExpenses}
-                            />
-                            <ExpenseSummary
-                                user={user}
-                                expenses={filteredExpenses}
-                                showSalaryInfo={false}
-                            />
-                            <div>
-                                <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-                                    <h2 className="text-2xl font-bold tracking-tight self-start">
-                                        Your Expenses
-                                    </h2>
-                                    <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                                        <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <Input
-                                                placeholder="Search expenses..."
-                                                className="pl-9 w-full"
-                                                value={searchQuery}
-                                                onChange={(e) =>
-                                                    setSearchQuery(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                        <Select
-                                            onValueChange={(
-                                                value:
-                                                    | "all"
-                                                    | "week"
-                                                    | "month"
-                                                    | "year",
-                                            ) => setDateFilter(value as any)}
-                                            defaultValue="all"
-                                        >
-                                            <SelectTrigger className="w-full sm:w-[160px]">
-                                                <SelectValue placeholder="Filter by date" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">
-                                                    All Time
-                                                </SelectItem>
-                                                <SelectItem value="week">
-                                                    This Week
-                                                </SelectItem>
-                                                <SelectItem value="month">
-                                                    This Month
-                                                </SelectItem>
-                                                <SelectItem value="year">
-                                                    This Year
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <Select
-                                            onValueChange={(
-                                                value: "all" | ExpenseStatus,
-                                            ) => setStatusFilter(value)}
-                                            defaultValue="all"
-                                        >
-                                            <SelectTrigger className="w-full sm:w-[160px]">
-                                                <SelectValue placeholder="Filter by status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="all">
-                                                    All Statuses
-                                                </SelectItem>
-                                                <SelectItem value="completed">
-                                                    Completed
-                                                </SelectItem>
-                                                <SelectItem value="pending">
-                                                    Pending
-                                                </SelectItem>
-                                                <SelectItem value="upcoming">
-                                                    Upcoming
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                                <ExpenseList
-                                    expenses={filteredExpenses}
-                                    onDelete={handleDeleteExpense}
-                                    onEdit={handleOpenForm}
-                                    user={user}
-                                />
+                    <div className="flex flex-col gap-8 pb-8">
+                        {enabledWidgets.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                {enabledWidgets.map(widgetKey => {
+                                    const Widget = widgetComponents[widgetKey].component;
+                                    const props = widgetComponents[widgetKey].props;
+                                    return <Widget key={widgetKey} {...props} />;
+                                })}
                             </div>
-                        </div>
-
-                        {/* Sidebar */}
-                        <div className="hidden md:block md:col-span-1 xl:col-span-1 md:sticky md:top-24 self-start h-full space-y-6">
-                            {sidebarContent}
+                        )}
+                        
+                        <div>
+                            <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                                <h2 className="text-2xl font-bold tracking-tight self-start">
+                                    Your Expenses
+                                </h2>
+                                <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                                    <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search expenses..."
+                                            className="pl-9 w-full"
+                                            value={searchQuery}
+                                            onChange={(e) =>
+                                                setSearchQuery(
+                                                    e.target.value,
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                    <Select
+                                        onValueChange={(
+                                            value:
+                                                | "all"
+                                                | "week"
+                                                | "month"
+                                                | "year",
+                                        ) => setDateFilter(value as any)}
+                                        defaultValue="all"
+                                    >
+                                        <SelectTrigger className="w-full sm:w-[160px]">
+                                            <SelectValue placeholder="Filter by date" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">
+                                                All Time
+                                            </SelectItem>
+                                            <SelectItem value="week">
+                                                This Week
+                                            </SelectItem>
+                                            <SelectItem value="month">
+                                                This Month
+                                            </SelectItem>
+                                            <SelectItem value="year">
+                                                This Year
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Select
+                                        onValueChange={(
+                                            value: "all" | ExpenseStatus,
+                                        ) => setStatusFilter(value)}
+                                        defaultValue="all"
+                                    >
+                                        <SelectTrigger className="w-full sm:w-[160px]">
+                                            <SelectValue placeholder="Filter by status" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">
+                                                All Statuses
+                                            </SelectItem>
+                                            <SelectItem value="completed">
+                                                Completed
+                                            </SelectItem>
+                                            <SelectItem value="pending">
+                                                Pending
+                                            </SelectItem>
+                                            <SelectItem value="upcoming">
+                                                Upcoming
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                            <ExpenseList
+                                expenses={filteredExpenses}
+                                onDelete={handleDeleteExpense}
+                                onEdit={handleOpenForm}
+                                user={user}
+                            />
                         </div>
                     </div>
                 </div>
