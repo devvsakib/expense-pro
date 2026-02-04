@@ -76,13 +76,16 @@ export type UserProfile = {
 export const importanceLevels = ["high", "medium", "low"] as const;
 export type Importance = (typeof importanceLevels)[number];
 
+export const taskStatuses = ["todo", "inprogress", "done"] as const;
+export type TaskStatus = (typeof taskStatuses)[number];
+
 export type Task = {
   id: string;
   description: string;
   deadline: Date;
   importance: Importance;
   estimatedEffort: string;
-  completed: boolean;
+  status: TaskStatus;
   startTime?: string;
   endTime?: string;
 };

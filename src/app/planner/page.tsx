@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import type { Task, TaskInput, TaskOutput, UserProfile } from '@/app/types';
+import { useState, useEffect, useMemo } from 'react';
+import type { Task, TaskInput, TaskOutput, UserProfile, TaskStatus } from '@/app/types';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,17 +18,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Sparkles, ListTodo, Loader2, CalendarCheck, ArrowRight, ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header';
 import TaskForm from '@/components/TaskForm';
@@ -56,10 +45,16 @@ export default function PlannerPage() {
 
       const storedTasks = localStorage.getItem('task-planner-tasks');
       if (storedTasks) {
-        const parsedTasks = JSON.parse(storedTasks).map((task: any) => ({
-          ...task,
-          deadline: new Date(task.deadline),
-        }));
+        const parsedTasks = JSON.parse(storedTasks).map((task: any) => {
+          const newStatus = task.status || (task.completed ? 'done' : 'todo');
+          const newTask = {
+            ...task,
+            deadline: new Date(task.deadline),
+            status: newStatus,
+          };
+          delete newTask.completed; // remove old property
+          return newTask;
+        });
         setTasks(parsedTasks);
       }
     } catch (error) {
@@ -79,22 +74,22 @@ export default function PlannerPage() {
     }
   }, [tasks, isClient]);
 
-  const handleAddTask = (formValues: Omit<Task, 'id' | 'completed'>) => {
+  const handleAddTask = (formValues: Omit<Task, 'id' | 'status'>) => {
     const newTask: Task = {
       id: crypto.randomUUID(),
-      completed: false,
+      status: 'todo',
       ...formValues,
     };
     setTasks(prev => [newTask, ...prev]);
     toast({
         title: "Task Added",
-        description: `"${newTask.description}" has been added to your list.`,
+        description: `"${newTask.description}" has been added to your 'To Do' list.`,
     });
   };
 
-  const handleToggleComplete = (id: string) => {
+  const handleUpdateTaskStatus = (id: string, status: TaskStatus) => {
     setTasks(tasks.map(task =>
-      task.id === id ? { ...task, completed: !task.completed } : task
+      task.id === id ? { ...task, status } : task
     ));
   };
 
@@ -102,7 +97,7 @@ export default function PlannerPage() {
     setTasks(tasks.filter(task => task.id !== id));
     toast({
         title: "Task Deleted",
-        description: "The task has been removed from your list.",
+        description: "The task has been removed from your board.",
     });
   };
   
@@ -122,11 +117,11 @@ export default function PlannerPage() {
       return;
     }
     
-    if (tasks.filter(t => !t.completed).length < 2) {
+    if (tasks.filter(t => t.status !== 'done').length < 2) {
       toast({
         variant: "destructive",
         title: "Not enough tasks",
-        description: "Add at least two incomplete tasks to use the AI prioritizer.",
+        description: "Add at least two active tasks to use the AI prioritizer.",
       });
       return;
     }
@@ -137,7 +132,7 @@ export default function PlannerPage() {
     
     const taskInput: TaskInput = {
       tasks: tasks
-        .filter(t => !t.completed)
+        .filter(t => t.status !== 'done')
         .map(t => ({
           description: t.description,
           deadline: format(t.deadline, 'yyyy-MM-dd'),
@@ -166,43 +161,46 @@ export default function PlannerPage() {
     if (!aiResponse) return;
 
     const orderedDescriptions = aiResponse.prioritizedTasks.map(t => t.description);
-    const completedTasks = tasks.filter(t => t.completed);
-    const nonCompletedTasks = tasks.filter(t => !t.completed);
+    const doneTasks = tasks.filter(t => t.status === 'done');
+    const activeTasks = tasks.filter(t => t.status !== 'done');
     
     const orderedTasks = orderedDescriptions.map(desc => {
-        return nonCompletedTasks.find(t => t.description === desc)!;
-    }).filter(Boolean); // Filter out any potential undefined values
+        return activeTasks.find(t => t.description === desc)!;
+    }).filter(Boolean);
     
-    // Add any tasks that were in the original list but not in the AI response
-    const unhandledTasks = nonCompletedTasks.filter(t => !orderedDescriptions.includes(t.description));
+    const unhandledTasks = activeTasks.filter(t => !orderedDescriptions.includes(t.description));
 
-    setTasks([...orderedTasks, ...unhandledTasks, ...completedTasks]);
+    setTasks([...orderedTasks, ...unhandledTasks, ...doneTasks].map(t => ({...t, status: 'todo'} as Task)));
     setAiModalOpen(false);
     toast({
         title: "Tasks Prioritized!",
-        description: "Your task list has been reordered by the AI.",
+        description: "Your active tasks have been reordered and moved to 'To Do'.",
     });
   };
+  
+  const todoTasks = useMemo(() => tasks.filter(t => t.status === 'todo'), [tasks]);
+  const inprogressTasks = useMemo(() => tasks.filter(t => t.status === 'inprogress'), [tasks]);
+  const doneTasks = useMemo(() => tasks.filter(t => t.status === 'done'), [tasks]);
 
   if (!isClient) {
-      return <div>Loading...</div> // Add a skeleton loader here if you want
+      return <div>Loading...</div>
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
-      <main className="flex-1">
-        <div className="container mx-auto py-8 px-4">
-          <div className="max-w-4xl mx-auto">
+      <main className="flex-1 flex flex-col">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-7xl mx-auto">
             <Link href="/" className="flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Dashboard
             </Link>
             <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              AI Task Planner
+              Task Board
             </h1>
             <p className="text-muted-foreground mb-8">
-              Organize your day with the power of AI.
+              Organize your day with a Kanban-style task board.
             </p>
 
             <div className="grid md:grid-cols-3 gap-4 mb-8">
@@ -210,8 +208,8 @@ export default function PlannerPage() {
                     <ProgressTracker tasks={tasks} />
                 </div>
                 <div className="md:col-span-2 flex flex-col sm:flex-row gap-2">
-                    <Button onClick={handlePrioritizeTasks} className="w-full" disabled={tasks.filter(t => !t.completed).length < 2}>
-                      <Sparkles className="mr-2" /> AI Prioritize Tasks
+                    <Button onClick={handlePrioritizeTasks} className="w-full" disabled={tasks.filter(t => t.status !== 'done').length < 2}>
+                      <Sparkles className="mr-2" /> AI Prioritize Active Tasks
                     </Button>
                     <Sheet>
                       <SheetTrigger asChild>
@@ -227,18 +225,32 @@ export default function PlannerPage() {
             </div>
 
             <TaskForm onSubmit={handleAddTask} />
+          </div>
+        </div>
 
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2">
-                <ListTodo /> Your Tasks
-              </h2>
+        <div className="flex-1 container mx-auto px-4 pb-8 overflow-x-auto">
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-[1000px] h-full">
               <TaskList
-                tasks={tasks}
-                onToggleComplete={handleToggleComplete}
-                onDelete={handleDeleteTask}
-                onUpdate={handleUpdateTask}
+                  title="To Do"
+                  tasks={todoTasks}
+                  onUpdateStatus={handleUpdateTaskStatus}
+                  onDelete={handleDeleteTask}
+                  onUpdate={handleUpdateTask}
               />
-            </div>
+              <TaskList
+                  title="In Progress"
+                  tasks={inprogressTasks}
+                  onUpdateStatus={handleUpdateTaskStatus}
+                  onDelete={handleDeleteTask}
+                  onUpdate={handleUpdateTask}
+              />
+              <TaskList
+                  title="Done"
+                  tasks={doneTasks}
+                  onUpdateStatus={handleUpdateTaskStatus}
+                  onDelete={handleDeleteTask}
+                  onUpdate={handleUpdateTask}
+              />
           </div>
         </div>
       </main>
@@ -251,7 +263,7 @@ export default function PlannerPage() {
               AI Prioritization Suggestion
             </DialogTitle>
             <DialogDescription>
-              Here's the plan I've come up with to maximize your productivity.
+              Here's the plan I've come up with to maximize your productivity. Applying this will move all active tasks to 'To Do'.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4 max-h-[60vh] overflow-y-auto">

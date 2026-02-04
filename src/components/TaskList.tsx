@@ -1,49 +1,48 @@
 
-import type { Task } from "@/app/types";
+import type { Task, TaskStatus } from "@/app/types";
 import TaskItem from "./TaskItem";
-import { Card, CardContent } from "@/components/ui/card";
-import { CheckSquare } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TaskListProps {
+  title: string;
   tasks: Task[];
-  onToggleComplete: (id: string) => void;
+  onUpdateStatus: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
   onUpdate: (id: string, updates: Partial<Task>) => void;
 }
 
-export default function TaskList({ tasks, onToggleComplete, onDelete, onUpdate }: TaskListProps) {
-  if (tasks.length === 0) {
-    return (
-      <Card className="text-center py-16 border-dashed border-2">
-        <CardContent className="flex flex-col items-center justify-center">
-          <CheckSquare className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-xl font-semibold">No tasks yet!</h3>
-          <p className="text-muted-foreground mt-1 max-w-sm">
-            Add a new task above to get started with the AI Planner.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
+export default function TaskList({ title, tasks, onUpdateStatus, onDelete, onUpdate }: TaskListProps) {
   
-  const sortedTasks = [...tasks].sort((a, b) => {
-      if (a.completed && !b.completed) return 1;
-      if (!a.completed && b.completed) return -1;
-      return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-  });
-
+  const sortedTasks = [...tasks].sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
 
   return (
-    <div className="space-y-4">
-      {sortedTasks.map((task) => (
-        <TaskItem
-          key={task.id}
-          task={task}
-          onToggleComplete={onToggleComplete}
-          onDelete={onDelete}
-          onUpdate={onUpdate}
-        />
-      ))}
+    <div className="bg-muted/50 rounded-lg h-full flex flex-col">
+      <div className="p-4 border-b">
+        <h2 className="text-lg font-bold tracking-tight flex items-center justify-between">
+          <span>{title}</span>
+          <span className="text-sm font-medium bg-background text-muted-foreground rounded-full px-2.5 py-0.5">{tasks.length}</span>
+        </h2>
+      </div>
+      
+      <ScrollArea className="flex-1">
+        <div className="p-4 space-y-3">
+          {sortedTasks.length > 0 ? (
+            sortedTasks.map((task) => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                onUpdateStatus={onUpdateStatus}
+                onDelete={onDelete}
+                onUpdate={onUpdate}
+              />
+            ))
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-center text-sm text-muted-foreground pt-10">
+              <p>No tasks in this column.</p>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
     </div>
   );
 }

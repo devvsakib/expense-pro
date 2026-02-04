@@ -33,7 +33,17 @@ export default function CalendarPage() {
 
       const storedTasks = localStorage.getItem('task-planner-tasks');
       if (storedTasks) {
-        setTasks(JSON.parse(storedTasks).map((t: any) => ({ ...t, deadline: new Date(t.deadline) })));
+        const parsedTasks = JSON.parse(storedTasks).map((task: any) => {
+          const newStatus = task.status || (task.completed ? 'done' : 'todo');
+          const newTask = {
+            ...task,
+            deadline: new Date(task.deadline),
+            status: newStatus,
+          };
+          delete newTask.completed;
+          return newTask;
+        });
+        setTasks(parsedTasks);
       }
     } catch (error) {
       console.error('Failed to load data from localStorage', error);

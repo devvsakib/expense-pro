@@ -15,7 +15,7 @@ import {
   isSameDay,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Circle, CheckCircle2 } from 'lucide-react';
+import { Circle, CheckCircle2, Loader2 } from 'lucide-react';
 import { getCurrencySymbol } from '@/lib/utils';
 
 interface FullCalendarProps {
@@ -92,8 +92,8 @@ export default function FullCalendar({
             <div className="flex-1 overflow-y-auto no-scrollbar mt-1 space-y-1">
               {dayTasks.map(task => (
                  <div key={task.id} className="flex items-center gap-1.5 p-1 rounded-sm text-xs bg-secondary/80 hover:bg-secondary">
-                    {task.completed ? <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" /> : <Circle className="h-3 w-3 text-orange-500 shrink-0" />}
-                    <span className="truncate">{task.description}</span>
+                    {task.status === 'done' ? <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" /> : task.status === 'inprogress' ? <Loader2 className="h-3 w-3 text-blue-500 shrink-0 animate-spin" /> : <Circle className="h-3 w-3 text-orange-500 shrink-0" />}
+                    <span className={cn("truncate", task.status === 'done' && 'line-through')}>{task.description}</span>
                  </div>
               ))}
               {dayExpenses.map(expense => (

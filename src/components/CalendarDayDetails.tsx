@@ -47,7 +47,7 @@ export default function CalendarDayDetails({ selectedDate, expenses, tasks, user
       const result = await generateCalendarSummary({
         date: format(selectedDate, 'MMMM d, yyyy'),
         expenses: expenses.map(e => ({ title: e.title, amount: e.amount, category: e.category })),
-        tasks: tasks.map(t => ({ description: t.description, completed: t.completed })),
+        tasks: tasks.map(t => ({ description: t.description, completed: t.status === 'done' })),
         currencySymbol,
       });
       setAiSummary(result.summary);
@@ -101,8 +101,8 @@ export default function CalendarDayDetails({ selectedDate, expenses, tasks, user
                         <ul className="space-y-2">
                             {tasks.map(task => (
                                 <li key={task.id} className="text-sm flex items-start gap-2">
-                                    {task.completed ? <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500 shrink-0" /> : <Circle className="h-4 w-4 mt-0.5 text-orange-500 shrink-0" />}
-                                    <span className={task.completed ? 'line-through text-muted-foreground' : ''}>
+                                    {task.status === 'done' ? <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500 shrink-0" /> : <Circle className="h-4 w-4 mt-0.5 text-orange-500 shrink-0" />}
+                                    <span className={task.status === 'done' ? 'line-through text-muted-foreground' : ''}>
                                         {task.description}
                                     </span>
                                 </li>
