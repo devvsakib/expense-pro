@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import type { Expense, ExpenseStatus, UserProfile, WidgetKey } from "@/app/types";
 import {
     expenseCategories
@@ -47,6 +47,13 @@ import ExpenseImportDialog from "@/components/ExpenseImportDialog";
 import DashboardWidgetSelector from "@/components/DashboardWidgetSelector";
 import { cn } from "@/lib/utils";
 
+const WIDGET_ORDER: WidgetKey[] = [
+    'budgetProgress',
+    'expenseSummary',
+    'categoryBudgets',
+    'spendingChart',
+    'categoryPieChart',
+];
 
 export default function Home() {
     const [user, setUser] = useState<UserProfile | null>(null);
@@ -239,6 +246,11 @@ export default function Home() {
         const monthStart = startOfMonth(now);
         return expenses.filter(expense => isAfter(expense.date, monthStart));
     }, [expenses]);
+    
+    const enabledWidgets = useMemo(() => {
+        if (!user) return [];
+        return WIDGET_ORDER.filter(key => user.dashboardWidgets?.[key]);
+    }, [user]);
 
     if (!isClient) {
         return (
@@ -272,26 +284,14 @@ export default function Home() {
     if (!user) {
         return <Onboarding onComplete={handleOnboardingComplete} />;
     }
-
-    const ExpenseSummaries = () => (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <ExpenseSummary user={user} expenses={expenses} type="pending" />
-            <ExpenseSummary user={user} expenses={expenses} type="upcoming" />
-            <ExpenseSummary user={user} expenses={expenses} type="recurring" />
-        </div>
-    );
-
-    const widgetComponents: Record<WidgetKey, { component: React.ElementType, props?: any }> = {
-      budgetProgress: { component: BudgetProgress, props: { user, expenses: currentMonthExpenses } },
-      expenseSummary: { component: ExpenseSummaries },
-      categoryBudgets: { component: CategoryBudgets, props: { user, expenses: currentMonthExpenses } },
-      spendingChart: { component: SpendingChart, props: { expenses: expenses, currency: user.currency } },
-      categoryPieChart: { component: CategoryPieChart, props: { expenses: expenses, currency: user.currency, customCategories: user.customCategories || [] } },
+    
+    const widgetComponents: Record<WidgetKey, { component: React.ElementType, props?: any, span?: string }> = {
+      budgetProgress: { component: BudgetProgress, props: { user, expenses: currentMonthExpenses }, span: 'md:col-span-2 xl:col-span-3' },
+      expenseSummary: { component: 'div' }, // Placeholder
+      categoryBudgets: { component: CategoryBudgets, props: { user, expenses: currentMonthExpenses }, span: 'xl:col-span-1' },
+      spendingChart: { component: SpendingChart, props: { expenses: expenses, currency: user.currency }, span: 'md:col-span-2 xl:col-span-2' },
+      categoryPieChart: { component: CategoryPieChart, props: { expenses: expenses, currency: user.currency, customCategories: user.customCategories || [] }, span: 'md:col-span-1 xl:col-span-1' },
     };
-
-    const enabledWidgets = Object.keys(widgetComponents).filter(
-        key => user.dashboardWidgets?.[key as WidgetKey]
-    ) as WidgetKey[];
 
     return (
         <div
@@ -391,13 +391,22 @@ export default function Home() {
                         {enabledWidgets.length > 0 && (
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                 {enabledWidgets.map(widgetKey => {
-                                    const Widget = widgetComponents[widgetKey].component;
-                                    const props = widgetComponents[widgetKey].props || {};
-                                    const isSummary = widgetKey === 'expenseSummary';
+                                    if (widgetKey === 'expenseSummary') {
+                                        return (
+                                            <React.Fragment key="summaries">
+                                                <ExpenseSummary user={user} expenses={expenses} type="pending" />
+                                                <ExpenseSummary user={user} expenses={expenses} type="upcoming" />
+                                                <ExpenseSummary user={user} expenses={expenses} type="recurring" />
+                                            </React.Fragment>
+                                        );
+                                    }
+
+                                    const config = widgetComponents[widgetKey];
+                                    const Widget = config.component;
                                     
                                     return (
-                                        <div key={widgetKey} className={cn(isSummary && 'md:col-span-2 xl:col-span-3')}>
-                                            <Widget {...props} />
+                                        <div key={widgetKey} className={cn(config.span)}>
+                                            <Widget {...config.props} />
                                         </div>
                                     );
                                 })}
