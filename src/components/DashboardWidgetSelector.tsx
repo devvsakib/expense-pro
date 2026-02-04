@@ -13,7 +13,9 @@ interface DashboardWidgetSelectorProps {
 
 const widgetConfig: { id: WidgetKey; label: string; description: string }[] = [
   { id: 'budgetProgress', label: 'Budget Progress', description: 'Your overall monthly budget tracking.' },
-  { id: 'expenseSummary', label: 'Expense Summary', description: 'Cards for pending, upcoming, and recurring costs.' },
+  { id: 'pendingSummary', label: 'Pending Summary', description: 'Summary of expenses marked as pending.' },
+  { id: 'upcomingSummary', label: 'Upcoming Summary', description: 'Summary of expenses marked as upcoming.' },
+  { id: 'recurringSummary', label: 'Recurring Summary', description: 'Estimated monthly cost of recurring expenses.' },
   { id: 'categoryBudgets', label: 'Category Budgets', description: 'Track spending against specific category limits.' },
   { id: 'spendingChart', label: '7-Day Spending Trend', description: 'A bar chart of your spending over the last week.' },
   { id: 'categoryPieChart', label: 'Category Breakdown', description: 'A pie chart of your spending distribution.' },
@@ -45,7 +47,7 @@ export default function DashboardWidgetSelector({ user, onWidgetToggle }: Dashbo
               </div>
               <Switch
                 id={`widget-${widget.id}`}
-                checked={currentWidgets[widget.id]}
+                checked={!!currentWidgets[widget.id]}
                 onCheckedChange={(checked) => onWidgetToggle(widget.id, checked)}
               />
             </div>

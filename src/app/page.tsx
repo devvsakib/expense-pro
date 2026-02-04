@@ -3,6 +3,9 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Expense, ExpenseStatus, UserProfile, WidgetKey } from "@/app/types";
 import {
+    expenseCategories
+} from "@/app/types";
+import {
     format,
     startOfWeek,
     startOfMonth,
@@ -56,6 +59,7 @@ export default function Home() {
     const [dateFilter, setDateFilter] = useState<
         "all" | "week" | "month" | "year"
     >("all");
+    const [categoryFilter, setCategoryFilter] = useState<"all" | string>("all");
     const [isImportOpen, setImportOpen] = useState(false);
     const [isWidgetSelectorOpen, setWidgetSelectorOpen] = useState(false);
 
@@ -68,13 +72,25 @@ export default function Home() {
             const storedUser = localStorage.getItem("expense-tracker-user");
             if (storedUser) {
                 const parsedUser = JSON.parse(storedUser);
+
+                // Migration for widgets
+                if (parsedUser.dashboardWidgets && typeof parsedUser.dashboardWidgets.expenseSummary !== 'undefined') {
+                    const summaryEnabled = parsedUser.dashboardWidgets.expenseSummary;
+                    parsedUser.dashboardWidgets.pendingSummary = summaryEnabled;
+                    parsedUser.dashboardWidgets.upcomingSummary = summaryEnabled;
+                    parsedUser.dashboardWidgets.recurringSummary = summaryEnabled;
+                    delete parsedUser.dashboardWidgets.expenseSummary;
+                }
+                
                 if (!parsedUser.dashboardWidgets) {
                     parsedUser.dashboardWidgets = {
                         budgetProgress: true,
-                        expenseSummary: true,
+                        pendingSummary: true,
+                        upcomingSummary: true,
+                        recurringSummary: true,
                         categoryBudgets: true,
                         spendingChart: true,
-                        categoryPieChart: true,
+                        categoryPieChart: false,
                     };
                 }
                 setUser(parsedUser);
@@ -183,6 +199,11 @@ export default function Home() {
         setUser(updatedUser);
     };
 
+    const allCategories = useMemo(() => [
+        ...expenseCategories,
+        ...(user?.customCategories?.map(c => c.name) || [])
+    ].sort(), [user?.customCategories]);
+
 
     const filteredExpenses = useMemo(() => {
         const now = new Date();
@@ -207,8 +228,12 @@ export default function Home() {
             .filter(
                 (expense) =>
                     statusFilter === "all" || expense.status === statusFilter,
+            )
+            .filter(
+                (expense) =>
+                    categoryFilter === "all" || expense.category === categoryFilter,
             );
-    }, [expenses, searchQuery, statusFilter, dateFilter]);
+    }, [expenses, searchQuery, statusFilter, dateFilter, categoryFilter]);
 
     if (!isClient) {
         return (
@@ -245,7 +270,9 @@ export default function Home() {
 
     const widgetComponents: Record<WidgetKey, { component: React.ElementType, props: any }> = {
       budgetProgress: { component: BudgetProgress, props: { user, expenses: filteredExpenses } },
-      expenseSummary: { component: ExpenseSummary, props: { user, expenses: filteredExpenses, showSalaryInfo: false } },
+      pendingSummary: { component: ExpenseSummary, props: { user, expenses: filteredExpenses, type: 'pending' } },
+      upcomingSummary: { component: ExpenseSummary, props: { user, expenses: filteredExpenses, type: 'upcoming' } },
+      recurringSummary: { component: ExpenseSummary, props: { user, expenses: filteredExpenses, type: 'recurring' } },
       categoryBudgets: { component: CategoryBudgets, props: { user, expenses: filteredExpenses } },
       spendingChart: { component: SpendingChart, props: { expenses: filteredExpenses, currency: user.currency } },
       categoryPieChart: { component: CategoryPieChart, props: { expenses: filteredExpenses, currency: user.currency, customCategories: user.customCategories || [] } },
@@ -405,6 +432,20 @@ export default function Home() {
                                             <SelectItem value="year">
                                                 This Year
                                             </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                     <Select
+                                        onValueChange={(value) => setCategoryFilter(value)}
+                                        defaultValue="all"
+                                    >
+                                        <SelectTrigger className="w-full sm:w-[180px]">
+                                            <SelectValue placeholder="Filter by category" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Categories</SelectItem>
+                                            {allCategories.map((cat) => (
+                                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <Select

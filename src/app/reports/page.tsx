@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import type { UserProfile, Expense, ExpenseStatus } from '@/app/types';
+import { expenseCategories } from '@/app/types';
 import Header from '@/components/Header';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Sparkles, Search } from 'lucide-react';
@@ -25,6 +26,7 @@ export default function ReportsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState<'all' | 'week' | 'month' | 'year'>('month');
   const [statusFilter, setStatusFilter] = useState<"all" | ExpenseStatus>('all');
+  const [categoryFilter, setCategoryFilter] = useState<"all" | string>('all');
   const [aiReport, setAiReport] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -44,6 +46,11 @@ export default function ReportsPage() {
     }
   }, []);
   
+  const allCategories = useMemo(() => [
+    ...expenseCategories,
+    ...(user?.customCategories?.map(c => c.name) || [])
+  ].sort(), [user?.customCategories]);
+
   const filteredExpenses = useMemo(() => {
     const now = new Date();
     if (!isClient) return []; // Ensure we don't filter on server
@@ -67,8 +74,12 @@ export default function ReportsPage() {
       )
       .filter(
         (expense) => statusFilter === "all" || expense.status === statusFilter
+      )
+      .filter(
+        (expense) =>
+            categoryFilter === "all" || expense.category === categoryFilter
       );
-  }, [expenses, dateFilter, isClient, searchQuery, statusFilter]);
+  }, [expenses, dateFilter, isClient, searchQuery, statusFilter, categoryFilter]);
 
   const handleGenerateReport = async () => {
     if (!user) return;
@@ -185,6 +196,20 @@ export default function ReportsPage() {
                     <SelectItem value="week">This Week</SelectItem>
                     <SelectItem value="month">This Month</SelectItem>
                     <SelectItem value="year">This Year</SelectItem>
+                    </SelectContent>
+                </Select>
+                 <Select
+                    onValueChange={(value) => setCategoryFilter(value)}
+                    defaultValue="all"
+                >
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Filter by category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {allCategories.map((cat) => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
                  <Select
