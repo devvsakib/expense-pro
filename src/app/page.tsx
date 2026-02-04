@@ -235,6 +235,12 @@ export default function Home() {
             );
     }, [expenses, searchQuery, statusFilter, dateFilter, categoryFilter]);
 
+    const currentMonthExpenses = useMemo(() => {
+        const now = new Date();
+        const monthStart = startOfMonth(now);
+        return expenses.filter(expense => isAfter(expense.date, monthStart));
+    }, [expenses]);
+
     if (!isClient) {
         return (
             <div className="flex flex-col min-h-screen">
@@ -269,13 +275,13 @@ export default function Home() {
     }
 
     const widgetComponents: Record<WidgetKey, { component: React.ElementType, props: any }> = {
-      budgetProgress: { component: BudgetProgress, props: { user, expenses: filteredExpenses } },
-      pendingSummary: { component: ExpenseSummary, props: { user, expenses: filteredExpenses, type: 'pending' } },
-      upcomingSummary: { component: ExpenseSummary, props: { user, expenses: filteredExpenses, type: 'upcoming' } },
-      recurringSummary: { component: ExpenseSummary, props: { user, expenses: filteredExpenses, type: 'recurring' } },
-      categoryBudgets: { component: CategoryBudgets, props: { user, expenses: filteredExpenses } },
-      spendingChart: { component: SpendingChart, props: { expenses: filteredExpenses, currency: user.currency } },
-      categoryPieChart: { component: CategoryPieChart, props: { expenses: filteredExpenses, currency: user.currency, customCategories: user.customCategories || [] } },
+      budgetProgress: { component: BudgetProgress, props: { user, expenses: currentMonthExpenses } },
+      pendingSummary: { component: ExpenseSummary, props: { user, expenses: expenses, type: 'pending' } },
+      upcomingSummary: { component: ExpenseSummary, props: { user, expenses: expenses, type: 'upcoming' } },
+      recurringSummary: { component: ExpenseSummary, props: { user, expenses: expenses, type: 'recurring' } },
+      categoryBudgets: { component: CategoryBudgets, props: { user, expenses: currentMonthExpenses } },
+      spendingChart: { component: SpendingChart, props: { expenses: expenses, currency: user.currency } },
+      categoryPieChart: { component: CategoryPieChart, props: { expenses: expenses, currency: user.currency, customCategories: user.customCategories || [] } },
     };
 
     const enabledWidgets = Object.keys(widgetComponents).filter(
