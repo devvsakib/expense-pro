@@ -8,10 +8,10 @@ interface TaskListProps {
   tasks: Task[];
   onUpdateStatus: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, updates: Partial<Task>) => void;
+  onEdit: (task: Task) => void;
 }
 
-export default function TaskList({ title, tasks, onUpdateStatus, onDelete, onUpdate }: TaskListProps) {
+export default function TaskList({ title, tasks, onUpdateStatus, onDelete, onEdit }: TaskListProps) {
   
   const sortedTasks = [...tasks].sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
 
@@ -33,7 +33,7 @@ export default function TaskList({ title, tasks, onUpdateStatus, onDelete, onUpd
                 task={task}
                 onUpdateStatus={onUpdateStatus}
                 onDelete={onDelete}
-                onUpdate={onUpdate}
+                onEdit={onEdit}
               />
             ))
           ) : (

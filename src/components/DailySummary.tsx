@@ -34,7 +34,7 @@ export default function DailySummary({ tasks }: DailySummaryProps) {
               <ul className="space-y-2">
                 {todoTasks.map((task) => (
                   <li key={task.id} className="font-medium">
-                    {task.description}
+                    {task.title}
                   </li>
                 ))}
               </ul>
@@ -55,7 +55,7 @@ export default function DailySummary({ tasks }: DailySummaryProps) {
               <ul className="space-y-2">
                 {inprogressTasks.map((task) => (
                   <li key={task.id} className="font-medium">
-                    {task.description}
+                    {task.title}
                   </li>
                 ))}
               </ul>
@@ -76,7 +76,7 @@ export default function DailySummary({ tasks }: DailySummaryProps) {
               <ul className="space-y-2">
                 {doneTasks.map((task) => (
                   <li key={task.id} className="text-muted-foreground line-through">
-                    {task.description}
+                    {task.title}
                   </li>
                 ))}
               </ul>

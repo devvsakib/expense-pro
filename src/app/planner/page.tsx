@@ -18,7 +18,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { Sparkles, ListTodo, Loader2, CalendarCheck, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Sparkles, ListTodo, Loader2, CalendarCheck, ArrowRight, ArrowLeft, PlusCircle } from 'lucide-react';
 import Header from '@/components/Header';
 import TaskForm from '@/components/TaskForm';
 import TaskList from '@/components/TaskList';
@@ -35,6 +35,9 @@ export default function PlannerPage() {
   const [isAiModalOpen, setAiModalOpen] = useState(false);
   const [aiResponse, setAiResponse] = useState<TaskOutput | null>(null);
   const [isPrioritizing, setIsPrioritizing] = useState(false);
+  const [isFormOpen, setFormOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,6 +52,8 @@ export default function PlannerPage() {
           const newStatus = task.status || (task.completed ? 'done' : 'todo');
           const newTask = {
             ...task,
+            title: task.title || task.description, // Handle old data
+            description: task.title ? task.description : undefined,
             deadline: new Date(task.deadline),
             status: newStatus,
           };
@@ -74,17 +79,34 @@ export default function PlannerPage() {
     }
   }, [tasks, isClient]);
 
-  const handleAddTask = (formValues: Omit<Task, 'id' | 'status'>) => {
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      status: 'todo',
-      ...formValues,
-    };
-    setTasks(prev => [newTask, ...prev]);
-    toast({
-        title: "Task Added",
-        description: `"${newTask.description}" has been added to your 'To Do' list.`,
-    });
+  const handleOpenForm = (task?: Task) => {
+    setEditingTask(task || null);
+    setFormOpen(true);
+  };
+
+  const handleCloseForm = () => {
+    setFormOpen(false);
+    setEditingTask(null);
+  };
+
+  const handleSaveTask = (formValues: Omit<Task, 'id' | 'status'>) => {
+    if (editingTask) {
+        // Update existing task
+        setTasks(tasks.map(task =>
+            task.id === editingTask.id ? { ...task, ...formValues } : task
+        ));
+        toast({ title: "Task Updated", description: `"${formValues.title}" has been updated.` });
+    } else {
+        // Add new task
+        const newTask: Task = {
+            id: crypto.randomUUID(),
+            status: 'todo',
+            ...formValues,
+        };
+        setTasks(prev => [newTask, ...prev]);
+        toast({ title: "Task Added", description: `"${newTask.title}" has been added to your 'To Do' list.` });
+    }
+    handleCloseForm();
   };
 
   const handleUpdateTaskStatus = (id: string, status: TaskStatus) => {
@@ -101,12 +123,6 @@ export default function PlannerPage() {
     });
   };
   
-  const handleUpdateTask = (id: string, updates: Partial<Task>) => {
-    setTasks(tasks.map(task =>
-        task.id === id ? { ...task, ...updates } : task
-    ));
-  };
-
   const handlePrioritizeTasks = async () => {
     if (!user?.apiKey) {
       toast({
@@ -134,6 +150,7 @@ export default function PlannerPage() {
       tasks: tasks
         .filter(t => t.status !== 'done')
         .map(t => ({
+          title: t.title,
           description: t.description,
           deadline: format(t.deadline, 'yyyy-MM-dd'),
           importance: t.importance,
@@ -160,15 +177,15 @@ export default function PlannerPage() {
   const applyAiPrioritization = () => {
     if (!aiResponse) return;
 
-    const orderedDescriptions = aiResponse.prioritizedTasks.map(t => t.description);
+    const orderedTitles = aiResponse.prioritizedTasks.map(t => t.title);
     const doneTasks = tasks.filter(t => t.status === 'done');
     const activeTasks = tasks.filter(t => t.status !== 'done');
     
-    const orderedTasks = orderedDescriptions.map(desc => {
-        return activeTasks.find(t => t.description === desc)!;
+    const orderedTasks = orderedTitles.map(title => {
+        return activeTasks.find(t => t.title === title)!;
     }).filter(Boolean);
     
-    const unhandledTasks = activeTasks.filter(t => !orderedDescriptions.includes(t.description));
+    const unhandledTasks = activeTasks.filter(t => !orderedTitles.includes(t.title));
 
     setTasks([...orderedTasks, ...unhandledTasks, ...doneTasks].map(t => ({...t, status: 'todo'} as Task)));
     setAiModalOpen(false);
@@ -189,6 +206,12 @@ export default function PlannerPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
+      <TaskForm
+        isOpen={isFormOpen}
+        onClose={handleCloseForm}
+        onSubmit={handleSaveTask}
+        task={editingTask}
+      />
       <main className="flex-1 flex flex-col">
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-7xl mx-auto">
@@ -208,6 +231,9 @@ export default function PlannerPage() {
                     <ProgressTracker tasks={tasks} />
                 </div>
                 <div className="md:col-span-2 flex flex-col sm:flex-row gap-2">
+                    <Button onClick={() => handleOpenForm()} variant="outline" className="w-full">
+                        <PlusCircle className="mr-2" /> Add New Task
+                    </Button>
                     <Button onClick={handlePrioritizeTasks} className="w-full" disabled={tasks.filter(t => t.status !== 'done').length < 2}>
                       <Sparkles className="mr-2" /> AI Prioritize Active Tasks
                     </Button>
@@ -224,7 +250,6 @@ export default function PlannerPage() {
                 </div>
             </div>
 
-            <TaskForm onSubmit={handleAddTask} />
           </div>
         </div>
 
@@ -235,21 +260,21 @@ export default function PlannerPage() {
                   tasks={todoTasks}
                   onUpdateStatus={handleUpdateTaskStatus}
                   onDelete={handleDeleteTask}
-                  onUpdate={handleUpdateTask}
+                  onEdit={handleOpenForm}
               />
               <TaskList
                   title="In Progress"
                   tasks={inprogressTasks}
                   onUpdateStatus={handleUpdateTaskStatus}
                   onDelete={handleDeleteTask}
-                  onUpdate={handleUpdateTask}
+                  onEdit={handleOpenForm}
               />
               <TaskList
                   title="Done"
                   tasks={doneTasks}
                   onUpdateStatus={handleUpdateTaskStatus}
                   onDelete={handleDeleteTask}
-                  onUpdate={handleUpdateTask}
+                  onEdit={handleOpenForm}
               />
           </div>
         </div>
@@ -283,7 +308,7 @@ export default function PlannerPage() {
                         <ol className="space-y-2 list-decimal list-inside">
                            {aiResponse.prioritizedTasks.map((task, index) => (
                                <li key={index} className="p-3 bg-card rounded-md border text-sm">
-                                   <strong className="font-medium">{task.description}</strong>
+                                   <strong className="font-medium">{task.title}</strong>
                                    <div className="text-xs text-muted-foreground mt-1 flex gap-x-4">
                                         <span>Deadline: {format(new Date(task.deadline), "MMM d")}</span>
                                         <span className="capitalize">Importance: {task.importance}</span>

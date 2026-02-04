@@ -1,11 +1,12 @@
 
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, PlusCircle } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Popover,
   PopoverContent,
@@ -31,13 +33,22 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { importanceLevels } from "@/app/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { importanceLevels, type Task } from "@/app/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
 
 const formSchema = z.object({
-  description: z.string().min(3, {
-    message: "Description must be at least 3 characters.",
+  title: z.string().min(3, {
+    message: "Title must be at least 3 characters.",
   }),
+  description: z.string().optional(),
   deadline: z.date({
     required_error: "A deadline is required.",
   }),
@@ -49,41 +60,67 @@ const formSchema = z.object({
   }),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 interface TaskFormProps {
-  onSubmit: (values: z.infer<typeof formSchema>) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (values: FormValues) => void;
+  task: Task | null;
 }
 
-export default function TaskForm({ onSubmit }: TaskFormProps) {
-  const form = useForm<z.infer<typeof formSchema>>({
+export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormProps) {
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      description: "",
-      deadline: new Date(),
-      importance: "medium",
-      estimatedEffort: "1 hour",
-    },
   });
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
+  useEffect(() => {
+    if (isOpen) {
+      if (task) {
+        form.reset({
+          ...task,
+          description: task.description || "",
+        });
+      } else {
+        form.reset({
+          title: "",
+          description: "",
+          deadline: new Date(),
+          importance: "medium",
+          estimatedEffort: "1 hour",
+        });
+      }
+    }
+  }, [task, form, isOpen]);
+
+
+  const handleSubmit = (values: FormValues) => {
     onSubmit(values);
-    form.reset();
-    form.setValue("deadline", new Date());
+  };
+  
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      onClose();
+    }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Add a New Task</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Dialog open={isOpen} onOpenChange={handleDialogChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{task ? "Edit Task" : "Create New Task"}</DialogTitle>
+          <DialogDescription>
+            {task ? "Update the details for your task." : "Fill in the details to create a new task."}
+          </DialogDescription>
+        </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+          <form id="task-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 pt-4">
             <FormField
               control={form.control}
-              name="description"
+              name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Task Description</FormLabel>
+                  <FormLabel>Task Title</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Finish project report" {...field} />
                   </FormControl>
@@ -91,8 +128,21 @@ export default function TaskForm({ onSubmit }: TaskFormProps) {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Add more details about the task..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="deadline"
@@ -172,13 +222,17 @@ export default function TaskForm({ onSubmit }: TaskFormProps) {
                 )}
               />
             </div>
-            
-            <Button type="submit" className="w-full md:w-auto">
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Task
-            </Button>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form="task-form">
+            {task ? "Save Changes" : "Create Task"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Trash2, Calendar, Clock, MoreHorizontal, ArrowRight, Check } from "lucide-react";
+import { Trash2, Calendar, Clock, MoreHorizontal, ArrowRight, Check, Edit, MessageSquareText } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +32,7 @@ interface TaskItemProps {
   task: Task;
   onUpdateStatus: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
-  onUpdate: (id: string, updates: Partial<Task>) => void;
+  onEdit: (task: Task) => void;
 }
 
 const importanceVariantMap = {
@@ -42,7 +42,7 @@ const importanceVariantMap = {
 } as const;
 
 
-export default function TaskItem({ task, onUpdateStatus, onDelete, onUpdate }: TaskItemProps) {
+export default function TaskItem({ task, onUpdateStatus, onDelete, onEdit }: TaskItemProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   return (
@@ -50,11 +50,17 @@ export default function TaskItem({ task, onUpdateStatus, onDelete, onUpdate }: T
       <CardContent className="p-3 flex flex-col gap-3">
         <div>
            <p className={cn(
-              "font-medium leading-tight",
+              "font-semibold leading-tight",
               task.status === 'done' && "line-through text-muted-foreground"
             )}>
-            {task.description}
+            {task.title}
           </p>
+          {task.description && (
+            <div className="flex items-start gap-1.5 mt-2 text-sm text-muted-foreground">
+                <MessageSquareText className="h-4 w-4 mt-0.5 shrink-0" />
+                <p className="whitespace-pre-wrap">{task.description}</p>
+            </div>
+          )}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mt-2">
             <div className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
@@ -75,7 +81,7 @@ export default function TaskItem({ task, onUpdateStatus, onDelete, onUpdate }: T
             <Input
               type="time"
               value={task.startTime ?? ''}
-              onChange={(e) => onUpdate(task.id, { startTime: e.target.value })}
+              onChange={(e) => onEdit({ ...task, startTime: e.target.value })}
               className="w-full text-xs h-8"
               aria-label="Start time"
               disabled={task.status === 'done'}
@@ -84,7 +90,7 @@ export default function TaskItem({ task, onUpdateStatus, onDelete, onUpdate }: T
             <Input
               type="time"
               value={task.endTime ?? ''}
-              onChange={(e) => onUpdate(task.id, { endTime: e.target.value })}
+              onChange={(e) => onEdit({ ...task, endTime: e.target.value })}
               className="w-full text-xs h-8"
               aria-label="End time"
               disabled={task.status === 'done'}
@@ -100,6 +106,8 @@ export default function TaskItem({ task, onUpdateStatus, onDelete, onUpdate }: T
                   </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEdit(task)}><Edit className="mr-2"/> Edit Task</DropdownMenuItem>
+                <DropdownMenuSeparator />
                 {task.status !== 'todo' && <DropdownMenuItem onClick={() => onUpdateStatus(task.id, 'todo')}><ArrowRight className="mr-2 rotate-180"/> Move to To Do</DropdownMenuItem>}
                 {task.status !== 'inprogress' && <DropdownMenuItem onClick={() => onUpdateStatus(task.id, 'inprogress')}><ArrowRight className="mr-2"/> Move to In Progress</DropdownMenuItem>}
                 {task.status !== 'done' && <DropdownMenuItem onClick={() => onUpdateStatus(task.id, 'done')}><Check className="mr-2"/> Move to Done</DropdownMenuItem>}
@@ -118,7 +126,7 @@ export default function TaskItem({ task, onUpdateStatus, onDelete, onUpdate }: T
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This will permanently delete the task "{task.description}". This action cannot be undone.
+                    This will permanently delete the task "{task.title}". This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

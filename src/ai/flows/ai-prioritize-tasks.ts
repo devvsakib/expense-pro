@@ -18,7 +18,8 @@ import {z} from 'genkit';
 const TaskInputSchema = z.object({
   tasks: z.array(
     z.object({
-      description: z.string().describe('A description of the task.'),
+      title: z.string().describe('The title of the task.'),
+      description: z.string().describe('An optional, more detailed description of the task.').optional(),
       deadline: z.string().describe('The deadline for the task (e.g., YYYY-MM-DD).'),
       importance: z
         .enum(['high', 'medium', 'low'])
@@ -34,7 +35,8 @@ export type TaskInput = z.infer<typeof TaskInputSchema>;
 const TaskOutputSchema = z.object({
   prioritizedTasks: z.array(
     z.object({
-      description: z.string().describe('A description of the task.'),
+      title: z.string().describe('The title of the task.'),
+      description: z.string().describe('An optional, more detailed description of the task.').optional(),
       deadline: z.string().describe('The deadline for the task (e.g., YYYY-MM-DD).'),
       importance: z
         .enum(['high', 'medium', 'low'])
@@ -65,7 +67,8 @@ const prioritizeTasksPrompt = ai.definePrompt({
 
   Tasks:
   {{#each tasks}}
-  - Description: {{this.description}}
+  - Title: {{this.title}}
+    {{#if this.description}}Description: {{this.description}}{{/if}}
     Deadline: {{this.deadline}}
     Importance: {{this.importance}}
     Estimated Effort: {{this.estimatedEffort}}

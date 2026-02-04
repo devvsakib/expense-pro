@@ -81,7 +81,8 @@ export type TaskStatus = (typeof taskStatuses)[number];
 
 export type Task = {
   id: string;
-  description: string;
+  title: string;
+  description?: string;
   deadline: Date;
   importance: Importance;
   estimatedEffort: string;
@@ -93,7 +94,8 @@ export type Task = {
 // For AI flow
 export type TaskInput = {
   tasks: {
-    description: string;
+    title: string;
+    description?: string;
     deadline: string;
     importance: Importance;
     estimatedEffort: string;
@@ -102,7 +104,8 @@ export type TaskInput = {
 
 export type TaskOutput = {
   prioritizedTasks: {
-    description: string;
+    title: string;
+    description?: string;
     deadline: string;
     importance: Importance;
     estimatedEffort: string;
