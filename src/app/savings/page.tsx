@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import type { SavingsGoal, UserProfile, Expense, Contribution } from '@/app/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Eye, PiggyBank, FilePenLine, Trash2, Pencil, History, X, Sparkles, CheckCircle2 } from 'lucide-react';
+import { PlusCircle, Loader2, Eye, Trophy, FilePenLine, Trash2, Pencil, History, X, Sparkles, CheckCircle2, MoreVertical } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   Dialog,
@@ -13,6 +14,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -368,86 +376,108 @@ export default function SavingsPage() {
             </Button>
         </div>
 
-        <div className="space-y-4">
-            {savingsGoals.length > 0 ? (
-                savingsGoals.map(goal => {
-                    const currentAmount = goal.contributions?.reduce((sum, c) => sum + c.amount, 0) || 0;
-                    const progress = goal.amount > 0 ? (currentAmount / goal.amount) * 100 : 0;
-                    const isCompleted = goal.status === 'completed';
-                    return (
-                    <Card key={goal.id}>
-                        <CardHeader>
-                            <div className="flex justify-between items-start">
+        <div className="space-y-6">
+          {savingsGoals.length > 0 ? (
+            savingsGoals.map((goal) => {
+              const currentAmount = goal.contributions?.reduce((sum, c) => sum + c.amount, 0) || 0;
+              const progress = goal.amount > 0 ? (currentAmount / goal.amount) * 100 : 0;
+              const isCompleted = goal.status === 'completed';
+              return (
+                <Card key={goal.id} className={cn("overflow-hidden transition-all hover:shadow-md", isCompleted && "bg-secondary/40")}>
+                    <div className="flex">
+                        <div className={cn("w-2", isCompleted ? "bg-green-500" : "bg-primary")} />
+                        <div className="flex-1 p-6">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Trophy className={cn("h-8 w-8 shrink-0", isCompleted ? "text-amber-500" : "text-muted-foreground")} />
+                                    <div>
+                                        <h3 className="text-xl font-bold">{goal.name}</h3>
+                                        <CardDescription>Target: {currencySymbol}{(goal.amount || 0).toLocaleString()}</CardDescription>
+                                    </div>
+                                </div>
+                                <div className="flex items-center">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="-mr-2 h-8 w-8 text-muted-foreground">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleViewPlan(goal.plan)}>
+                                                <Eye className="mr-2 h-4 w-4" /> View Plan
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => setGoalToViewHistory(goal)}>
+                                                <History className="mr-2 h-4 w-4" /> View History
+                                            </DropdownMenuItem>
+                                            {!isCompleted && (
+                                                <DropdownMenuItem onClick={() => handleOpenDialog('edit', goal)}>
+                                                    <Pencil className="mr-2 h-4 w-4" /> Edit Goal
+                                                </DropdownMenuItem>
+                                            )}
+                                            <DropdownMenuSeparator />
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={(e) => e.preventDefault()}>
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Goal
+                                                    </DropdownMenuItem>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This action will permanently delete your savings goal "{goal.name}". This cannot be undone.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteGoal(goal.id)}>
+                                                            Delete
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
+                            
+                            <div className="mt-4 space-y-4">
                                 <div>
-                                    <div className="flex items-center gap-2">
-                                        <CardTitle>{goal.name}</CardTitle>
-                                        {isCompleted ? (
-                                             <Badge variant="default" className="flex items-center gap-1.5 text-xs bg-green-600 hover:bg-green-700">
-                                                <CheckCircle2 className="h-3 w-3" /> Completed
-                                            </Badge>
-                                        ) : goal.isAiGenerated && (
-                                            <Badge variant="secondary" className="flex items-center gap-1.5 text-xs">
+                                    <div className="flex items-end justify-between">
+                                        <p className="text-3xl font-bold">{currencySymbol}{currentAmount.toLocaleString()}</p>
+                                        {isCompleted && goal.completedAt ? (
+                                           <p className="text-sm font-medium text-green-600">Completed on {format(new Date(goal.completedAt), 'MMM d, yyyy')}</p>
+                                        ) : (
+                                           <p className="text-sm text-muted-foreground">{currencySymbol}{(goal.amount - currentAmount).toLocaleString()} left</p>
+                                        )}
+                                    </div>
+                                    <Progress value={Math.min(progress, 100)} className={cn("mt-1 h-2", isCompleted && "[&>div]:bg-green-600")} />
+                                </div>
+                                
+                                <div className="flex items-center justify-between">
+                                     <div className="flex items-center gap-2">
+                                        {goal.isAiGenerated && (
+                                            <Badge variant="outline" className="flex items-center gap-1.5 text-xs">
                                                 <Sparkles className="h-3 w-3 text-primary" /> AI Plan
                                             </Badge>
                                         )}
                                     </div>
-                                    <CardDescription>
-                                        Goal: {currencySymbol}{(goal.amount || 0).toLocaleString()} &bull; Created on {format(new Date(goal.createdAt), 'MMM d, yyyy')}
-                                        {isCompleted && goal.completedAt && ` • Completed on ${format(new Date(goal.completedAt), 'MMM d, yyyy')}`}
-                                    </CardDescription>
-                                </div>
-                                <div className="flex gap-1.5">
-                                    <Button variant="outline" size="sm" onClick={() => handleViewPlan(goal.plan)}>
-                                        <Eye className="mr-2 h-4 w-4" /> Plan
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={() => setGoalToViewHistory(goal)}>
-                                        <History className="mr-2 h-4 w-4" /> History
-                                    </Button>
-                                    <Button variant="outline" size="icon" onClick={() => handleOpenDialog('edit', goal)}>
-                                        <Pencil className="h-4 w-4"/>
-                                    </Button>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button variant="destructive" size="icon">
-                                                <Trash2 className="h-4 w-4"/>
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                                <AlertDialogDescription>
-                                                    This action will permanently delete your savings goal "{goal.name}". This cannot be undone.
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteGoal(goal.id)}>
-                                                    Delete
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
+                                    {!isCompleted && (
+                                        <Button size="sm" onClick={() => setGoalToContribute(goal)}>
+                                            <PlusCircle className="mr-2 h-4 w-4" /> Contribute
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex justify-between items-center mb-2 text-sm">
-                                <span className="text-muted-foreground">Progress ({Math.min(progress, 100).toFixed(0)}%)</span>
-                                <span className="font-medium">{currencySymbol}{currentAmount.toLocaleString()} / {currencySymbol}{(goal.amount || 0).toLocaleString()}</span>
-                            </div>
-                            <Progress value={Math.min(progress, 100)} className={cn("h-2", isCompleted && "[&>div]:bg-green-600")} />
-                            <div className="mt-4">
-                                <Button variant="secondary" size="sm" onClick={() => setGoalToContribute(goal)} disabled={isCompleted}>
-                                    <FilePenLine className="mr-2 h-4 w-4" /> Add Contribution
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )})
-            ) : (
+                        </div>
+                    </div>
+                </Card>
+              );
+            })
+          ) : (
                 <Card className="text-center py-16 border-dashed border-2">
                     <CardContent className="flex flex-col items-center justify-center">
-                        <PiggyBank className="h-12 w-12 text-muted-foreground mb-4" />
+                        <Trophy className="h-12 w-12 text-muted-foreground mb-4" />
                         <h3 className="text-xl font-semibold">No savings goals yet.</h3>
                         <p className="text-muted-foreground mt-1 max-w-sm">
                             Click "Create New Goal" to get your first AI-powered savings plan.
@@ -696,3 +726,5 @@ export default function SavingsPage() {
     </div>
   );
 }
+
+    
