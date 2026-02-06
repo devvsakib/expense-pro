@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { SavingsGoal, UserProfile, Expense, Contribution } from '@/app/types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Loader2, Eye, PiggyBank, FilePenLine, Trash2, Pencil, History, X, Sparkles } from 'lucide-react';
+import { PlusCircle, Loader2, Eye, PiggyBank, FilePenLine, Trash2, Pencil, History, X, Sparkles, CheckCircle2 } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   Dialog,
@@ -40,7 +40,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { generateSavingsPlan } from '@/ai/flows/ai-savings-coach';
-import { getCurrencySymbol } from '@/lib/utils';
+import { getCurrencySymbol, cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -113,12 +113,18 @@ export default function SavingsPage() {
                 }
             }
             delete g.currentAmount;
+            
+            // Migration for status
+            const currentAmount = contributions.reduce((sum, c) => sum + c.amount, 0);
+            const status = g.status || (g.amount > 0 && currentAmount >= g.amount ? 'completed' : 'inprogress');
 
             return {
                 ...g,
                 createdAt: new Date(g.createdAt),
                 contributions: contributions,
-                isAiGenerated: g.isAiGenerated === undefined ? true : g.isAiGenerated, // Default old goals to AI generated
+                isAiGenerated: g.isAiGenerated === undefined ? true : g.isAiGenerated,
+                status: status,
+                completedAt: g.completedAt,
             };
         });
         setSavingsGoals(parsedGoals as any);
@@ -167,7 +173,28 @@ export default function SavingsPage() {
 
   const handleCreateOrUpdateGoal = async (values: FormValues) => {
       if (dialogMode === 'edit' && goalToEdit) {
-        setSavingsGoals(goals => goals.map(g => g.id === goalToEdit.id ? { ...g, name: values.goalName, amount: values.goalAmount, plan: values.plan || g.plan } : g));
+        setSavingsGoals(goals => goals.map(g => {
+            if (g.id === goalToEdit.id) {
+                const currentAmount = g.contributions.reduce((sum, c) => sum + c.amount, 0);
+                const newStatus = (values.goalAmount > 0 && currentAmount >= values.goalAmount) ? 'completed' : 'inprogress';
+                
+                const updatedGoal: SavingsGoal = {
+                    ...g,
+                    name: values.goalName,
+                    amount: values.goalAmount,
+                    plan: values.plan || g.plan,
+                    status: newStatus,
+                };
+
+                if (newStatus === 'completed' && g.status !== 'completed') {
+                    updatedGoal.completedAt = new Date().toISOString();
+                } else if (newStatus === 'inprogress') {
+                    delete updatedGoal.completedAt;
+                }
+                return updatedGoal;
+            }
+            return g;
+        }));
         toast({ title: "Goal Updated!", description: "Your savings goal has been updated." });
     } else { // Create mode
         if (!user) return;
@@ -181,6 +208,7 @@ export default function SavingsPage() {
                 isAiGenerated: false,
                 createdAt: new Date().toISOString(),
                 contributions: [],
+                status: 'inprogress',
             };
             setSavingsGoals(prev => [newGoal, ...prev]);
             toast({ title: "Goal Created!", description: "Your new savings goal has been added." });
@@ -212,6 +240,7 @@ export default function SavingsPage() {
                     isAiGenerated: true,
                     createdAt: new Date().toISOString(),
                     contributions: [],
+                    status: 'inprogress',
                 };
                 setSavingsGoals(prev => [newGoal, ...prev]);
                 toast({ title: "Savings Plan Created!", description: "Your new savings goal has been added." });
@@ -251,11 +280,24 @@ export default function SavingsPage() {
         amount: values.amount,
         date: new Date().toISOString()
       };
-      setSavingsGoals(goals => goals.map(g => 
-        g.id === goalToContribute.id 
-        ? { ...g, contributions: [...g.contributions, newContribution] }
-        : g
-    ));
+      
+      setSavingsGoals(goals => goals.map(g => {
+        if (g.id === goalToContribute.id) {
+            const updatedContributions = [...g.contributions, newContribution];
+            const newTotal = updatedContributions.reduce((sum, c) => sum + c.amount, 0);
+            let newStatus = g.status;
+            let newCompletedAt = g.completedAt;
+
+            if (g.amount > 0 && newTotal >= g.amount && g.status !== 'completed') {
+                newStatus = 'completed';
+                newCompletedAt = new Date().toISOString();
+                toast({ title: "Goal Completed!", description: `Congratulations on reaching your goal for "${g.name}"!` });
+            }
+            
+            return { ...g, contributions: updatedContributions, status: newStatus, completedAt: newCompletedAt };
+        }
+        return g;
+      }));
     
     toast({ title: "Contribution Added!", description: `You've added ${currencySymbol}${values.amount} to your goal.` });
     setGoalToContribute(null);
@@ -266,7 +308,21 @@ export default function SavingsPage() {
       setSavingsGoals(goals => goals.map(g => {
           if (g.id === goalId) {
               const updatedContributions = g.contributions.filter(c => c.id !== contributionId);
-              return { ...g, contributions: updatedContributions };
+               const newTotal = updatedContributions.reduce((sum, c) => sum + c.amount, 0);
+                let newStatus = g.status;
+
+                if (g.amount > 0 && newTotal < g.amount && g.status === 'completed') {
+                    newStatus = 'inprogress';
+                }
+                
+                const updatedGoal = { ...g, contributions: updatedContributions, status: newStatus, completedAt: newStatus === 'inprogress' ? undefined : g.completedAt };
+                
+                // Update the goal being viewed in the history dialog, if it's open
+                if (goalToViewHistory?.id === goalId) {
+                    setGoalToViewHistory(updatedGoal);
+                }
+
+                return updatedGoal;
           }
           return g;
       }));
@@ -317,6 +373,7 @@ export default function SavingsPage() {
                 savingsGoals.map(goal => {
                     const currentAmount = goal.contributions?.reduce((sum, c) => sum + c.amount, 0) || 0;
                     const progress = goal.amount > 0 ? (currentAmount / goal.amount) * 100 : 0;
+                    const isCompleted = goal.status === 'completed';
                     return (
                     <Card key={goal.id}>
                         <CardHeader>
@@ -324,7 +381,11 @@ export default function SavingsPage() {
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <CardTitle>{goal.name}</CardTitle>
-                                        {goal.isAiGenerated && (
+                                        {isCompleted ? (
+                                             <Badge variant="default" className="flex items-center gap-1.5 text-xs bg-green-600 hover:bg-green-700">
+                                                <CheckCircle2 className="h-3 w-3" /> Completed
+                                            </Badge>
+                                        ) : goal.isAiGenerated && (
                                             <Badge variant="secondary" className="flex items-center gap-1.5 text-xs">
                                                 <Sparkles className="h-3 w-3 text-primary" /> AI Plan
                                             </Badge>
@@ -332,6 +393,7 @@ export default function SavingsPage() {
                                     </div>
                                     <CardDescription>
                                         Goal: {currencySymbol}{(goal.amount || 0).toLocaleString()} &bull; Created on {format(new Date(goal.createdAt), 'MMM d, yyyy')}
+                                        {isCompleted && goal.completedAt && ` • Completed on ${format(new Date(goal.completedAt), 'MMM d, yyyy')}`}
                                     </CardDescription>
                                 </div>
                                 <div className="flex gap-1.5">
@@ -370,12 +432,12 @@ export default function SavingsPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="flex justify-between items-center mb-2 text-sm">
-                                <span className="text-muted-foreground">Progress ({progress.toFixed(0)}%)</span>
+                                <span className="text-muted-foreground">Progress ({Math.min(progress, 100).toFixed(0)}%)</span>
                                 <span className="font-medium">{currencySymbol}{currentAmount.toLocaleString()} / {currencySymbol}{(goal.amount || 0).toLocaleString()}</span>
                             </div>
-                            <Progress value={progress} className="h-2" />
+                            <Progress value={Math.min(progress, 100)} className={cn("h-2", isCompleted && "[&>div]:bg-green-600")} />
                             <div className="mt-4">
-                                <Button variant="secondary" size="sm" onClick={() => setGoalToContribute(goal)}>
+                                <Button variant="secondary" size="sm" onClick={() => setGoalToContribute(goal)} disabled={isCompleted}>
                                     <FilePenLine className="mr-2 h-4 w-4" /> Add Contribution
                                 </Button>
                             </div>

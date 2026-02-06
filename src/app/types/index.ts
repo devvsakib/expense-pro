@@ -127,6 +127,8 @@ export type SavingsGoal = {
   isAiGenerated: boolean;
   createdAt: string;
   contributions: Contribution[];
+  status: 'inprogress' | 'completed';
+  completedAt?: string;
 };
 
 export type ChatMessage = {
