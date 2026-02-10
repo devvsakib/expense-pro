@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import type { Task, TaskInput, TaskOutput, UserProfile, TaskStatus } from '@/app/types';
-import { format } from 'date-fns';
+import { format, addHours, isBefore, isAfter } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {
   Sheet,
@@ -78,6 +78,55 @@ export default function PlannerPage() {
       }
     }
   }, [tasks, isClient]);
+  
+  // Effect for task reminders
+  useEffect(() => {
+    if (!isClient || !user?.notifications?.enabled || Notification.permission !== 'granted') {
+      return;
+    }
+    
+    const NOTIFIED_TASKS_KEY = 'task-planner-notified-ids';
+
+    const checkAndNotify = () => {
+      const notifiedTaskIds: string[] = JSON.parse(localStorage.getItem(NOTIFIED_TASKS_KEY) || '[]');
+      const now = new Date();
+      const in24Hours = addHours(now, 24);
+      
+      const newNotifications: string[] = [];
+
+      tasks.forEach(task => {
+        const deadline = task.deadline; 
+        
+        if (
+          task.status !== 'done' &&
+          !notifiedTaskIds.includes(task.id) &&
+          isAfter(deadline, now) &&
+          isBefore(deadline, in24Hours)
+        ) {
+          new Notification('Task Reminder', {
+            body: `Your task "${task.title}" is due soon!`,
+            icon: '/icons/icon-192x192.png',
+            tag: task.id, // Using a tag prevents duplicate notifications for the same task
+          });
+          newNotifications.push(task.id);
+        }
+      });
+
+      if (newNotifications.length > 0) {
+        const updatedNotifiedIds = [...notifiedTaskIds, ...newNotifications];
+        localStorage.setItem(NOTIFIED_TASKS_KEY, JSON.stringify(updatedNotifiedIds));
+      }
+    };
+    
+    // Check for notifications every minute.
+    const intervalId = setInterval(checkAndNotify, 60000);
+    
+    // Run on initial load after a small delay
+    setTimeout(checkAndNotify, 2000); 
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, [tasks, user?.notifications?.enabled, isClient]);
 
   const handleOpenForm = (task?: Task) => {
     setEditingTask(task || null);
