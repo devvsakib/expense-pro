@@ -82,7 +82,7 @@ export default function TaskItem({ task, onUpdateStatus, onDelete, onEdit }: Tas
               type="time"
               value={task.startTime ?? ''}
               onChange={(e) => onEdit({ ...task, startTime: e.target.value })}
-              className="w-full text-xs h-8"
+              className="w-28 text-xs h-8"
               aria-label="Start time"
               disabled={task.status === 'done'}
             />
@@ -91,7 +91,7 @@ export default function TaskItem({ task, onUpdateStatus, onDelete, onEdit }: Tas
               type="time"
               value={task.endTime ?? ''}
               onChange={(e) => onEdit({ ...task, endTime: e.target.value })}
-              className="w-full text-xs h-8"
+              className="w-28 text-xs h-8"
               aria-label="End time"
               disabled={task.status === 'done'}
             />

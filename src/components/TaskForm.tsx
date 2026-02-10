@@ -58,6 +58,8 @@ const formSchema = z.object({
   estimatedEffort: z.string().min(1, {
     message: "Estimated effort is required.",
   }),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -80,6 +82,8 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
         form.reset({
           ...task,
           description: task.description || "",
+          startTime: task.startTime || "",
+          endTime: task.endTime || "",
         });
       } else {
         form.reset({
@@ -88,6 +92,8 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
           deadline: new Date(),
           importance: "medium",
           estimatedEffort: "1 hour",
+          startTime: "",
+          endTime: "",
         });
       }
     }
@@ -216,6 +222,34 @@ export default function TaskForm({ isOpen, onClose, onSubmit, task }: TaskFormPr
                     <FormLabel>Estimated Effort</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., 2 hours" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+               <FormField
+                control={form.control}
+                name="startTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Time (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="endTime"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Time (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="time" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
