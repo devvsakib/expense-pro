@@ -71,6 +71,9 @@ export type UserProfile = {
   ocrEngine?: OcrEngine;
   autoSuggestCategory?: boolean;
   dashboardWidgets?: Record<WidgetKey, boolean>;
+  notifications?: {
+    enabled: boolean;
+  };
 };
 
 export const importanceLevels = ["high", "medium", "low"] as const;

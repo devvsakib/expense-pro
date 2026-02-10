@@ -22,7 +22,7 @@ import type { UserProfile, Currency, CustomCategory, Expense, CategoryBudget, Ex
 import { currencyOptions, expenseCategories, expenseStatuses, recurrenceOptions, ocrEngineOptions } from '@/app/types';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download, Target, Bot, Settings as SettingsIcon, Tag } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, PlusCircle, Trash2, Download, Target, Bot, Settings as SettingsIcon, Tag, BellRing } from 'lucide-react';
 import Header from '@/components/Header';
 import {
   AlertDialog,
@@ -346,6 +346,35 @@ export default function SettingsPage() {
       description: `Your data export in ${exportFormat.toUpperCase()} format is being downloaded.`,
     });
   }
+
+  const handleNotificationToggle = async (enabled: boolean) => {
+    if (!user) return;
+
+    if (enabled) {
+      if (!("Notification" in window)) {
+        toast({ variant: "destructive", title: "Notifications Not Supported", description: "Your browser does not support desktop notifications." });
+        return;
+      }
+
+      if (Notification.permission === "granted") {
+        updateUserProfile({ ...user, notifications: { ...user.notifications, enabled: true } });
+        toast({ title: "Notifications are already enabled." });
+      } else if (Notification.permission !== "denied") {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+          updateUserProfile({ ...user, notifications: { ...user.notifications, enabled: true } });
+          toast({ title: "Notifications enabled successfully!" });
+        } else {
+          toast({ variant: "destructive", title: "Permission Denied", description: "You have blocked notifications." });
+        }
+      } else {
+        toast({ variant: "destructive", title: "Notifications Blocked", description: "To enable notifications, please update your browser's site settings for this page." });
+      }
+    } else {
+      updateUserProfile({ ...user, notifications: { ...user.notifications, enabled: false } });
+      toast({ title: "Notifications disabled." });
+    }
+  };
   
   if (!isClient || !user) {
     return <div>Loading...</div>
@@ -522,6 +551,27 @@ export default function SettingsPage() {
                         </form>
                     </Form>
                 </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><BellRing /> Notification Settings</CardTitle>
+                <CardDescription>Manage how you receive reminders and updates.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                        <Label className="text-base">Enable Reminders</Label>
+                        <p className="text-sm text-muted-foreground">
+                            Receive notifications for upcoming task deadlines.
+                        </p>
+                    </div>
+                    <Switch
+                        checked={user.notifications?.enabled || false}
+                        onCheckedChange={handleNotificationToggle}
+                    />
+                </div>
+              </CardContent>
             </Card>
 
              <Card>
