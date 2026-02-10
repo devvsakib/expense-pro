@@ -73,7 +73,7 @@ export default function FullCalendar({
             key={day.toString()}
             onClick={() => onDateSelect(day)}
             className={cn(
-              'relative h-40 flex flex-col p-2 border-r border-b border-border cursor-pointer transition-colors',
+              'relative h-32 sm:h-40 flex flex-col p-2 border-r border-b border-border cursor-pointer transition-colors',
               isCurrent ? 'bg-card' : 'bg-muted/50',
               isSel && 'bg-primary/10 ring-2 ring-primary z-10',
               'hover:bg-accent/50'
@@ -93,7 +93,7 @@ export default function FullCalendar({
               {dayTasks.map(task => (
                  <div key={task.id} className="flex items-center gap-1.5 p-1 rounded-sm text-xs bg-secondary/80 hover:bg-secondary">
                     {task.status === 'done' ? <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" /> : task.status === 'inprogress' ? <Loader2 className="h-3 w-3 text-blue-500 shrink-0 animate-spin" /> : <Circle className="h-3 w-3 text-orange-500 shrink-0" />}
-                    <span className={cn("truncate", task.status === 'done' && 'line-through')}>{task.description}</span>
+                    <span className={cn("truncate", task.status === 'done' && 'line-through')}>{task.title}</span>
                  </div>
               ))}
               {dayExpenses.map(expense => (
