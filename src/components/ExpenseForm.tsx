@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format, startOfMonth } from "date-fns";
-import { Calendar as CalendarIcon, Camera, Loader2, Sparkles } from "lucide-react";
+import { Calendar as CalendarIcon, Camera, Loader2, Sparkles, Plus, X } from "lucide-react";
 import { createWorker } from 'tesseract.js';
 
 import { Button } from "@/components/ui/button";
@@ -55,13 +55,15 @@ import { scanReceipt } from "@/ai/flows/ai-receipt-scanner";
 import { useToast } from "@/hooks/use-toast";
 import { suggestCategory } from "@/ai/flows/ai-categorize-expense";
 import { Progress } from "./ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "./ui/scroll-area";
 
 
 const formSchema = z.object({
   title: z.string().min(2, {
     message: "Title must be at least 2 characters.",
   }),
-  amount: z.coerce.number().positive({ message: "Amount must be positive." }),
+  amount: z.coerce.number().min(0, { message: "Amount cannot be negative." }),
   date: z.date({
     required_error: "An expense date is required.",
   }),
@@ -75,9 +77,13 @@ const formSchema = z.object({
     required_error: "Please select a recurrence.",
   }),
   notes: z.string().optional(),
+}).refine(data => data.amount > 0, {
+    message: "Amount must be positive.",
+    path: ["amount"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
+type MultiItem = { id: string; name: string; cost: number };
 
 interface ExpenseFormProps {
   isOpen: boolean;
@@ -101,6 +107,11 @@ export default function ExpenseForm({
     resolver: zodResolver(formSchema),
   });
   
+  const [entryMode, setEntryMode] = useState<'single' | 'multiple'>('single');
+  const [items, setItems] = useState<MultiItem[]>([]);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemCost, setNewItemCost] = useState('');
+  
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState<{ progress: number; status: string } | null>(null);
   const [isCategorizing, setIsCategorizing] = useState(false);
@@ -110,7 +121,19 @@ export default function ExpenseForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (entryMode === 'multiple') {
+      const total = items.reduce((sum, item) => sum + item.cost, 0);
+      form.setValue('amount', total, { shouldValidate: true });
+    }
+  }, [items, entryMode, form]);
+
+  useEffect(() => {
     if (isOpen) {
+      setItems([]);
+      setNewItemName('');
+      setNewItemCost('');
+      setEntryMode('single');
+
       if (expense) {
         form.reset({
           ...expense,
@@ -277,9 +300,31 @@ export default function ExpenseForm({
     return { ...budget, spent: spentThisMonth, remaining, progress };
   }, [categoryValue, user.categoryBudgets, expenses, expense]);
 
+  const handleAddItem = () => {
+    const cost = parseFloat(newItemCost);
+    if (newItemName.trim() && !isNaN(cost) && cost > 0) {
+      setItems([...items, { id: crypto.randomUUID(), name: newItemName.trim(), cost }]);
+      setNewItemName('');
+      setNewItemCost('');
+    }
+  };
+
+  const handleRemoveItem = (id: string) => {
+    setItems(items.filter(item => item.id !== id));
+  };
+
 
   const handleSubmit = (values: FormValues) => {
-    onSubmit(values);
+    let finalValues = { ...values };
+    if (entryMode === 'multiple' && items.length > 0) {
+        const itemsSummary = items.map(item => `${item.name} - ${item.cost.toFixed(2)}`).join('\n');
+        const itemsHeader = "---Items---\n";
+        // Prepend items to notes
+        finalValues.notes = values.notes 
+            ? `${itemsHeader}${itemsSummary}\n\n---Notes---\n${values.notes}` 
+            : `${itemsHeader}${itemsSummary}`;
+    }
+    onSubmit(finalValues);
   };
   
   const handleDialogChange = (open: boolean) => {
@@ -445,74 +490,139 @@ export default function ExpenseForm({
                     <FormItem>
                     <FormLabel>Title</FormLabel>
                     <FormControl>
-                        <Input placeholder="e.g., Lunch with colleagues" {...field} />
+                        <Input placeholder="e.g., Weekly Groceries" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name="amount"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Amount</FormLabel>
-                        <FormControl>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
-                            {currencySymbol}
-                            </span>
-                            <Input type="number" placeholder="0.00" className="pl-8" {...field} value={field.value ?? ""} />
-                        </div>
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
+                <Tabs value={entryMode} onValueChange={(value) => setEntryMode(value as 'single' | 'multiple')} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="single" disabled={!!expense}>Single Entry</TabsTrigger>
+                        <TabsTrigger value="multiple" disabled={!!expense}>Multi-Item</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="single" className="pt-2">
+                        <FormField
+                            control={form.control}
+                            name="amount"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Amount</FormLabel>
+                                <FormControl>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+                                    {currencySymbol}
+                                    </span>
+                                    <Input type="number" placeholder="0.00" className="pl-8" {...field} value={field.value ?? ""} />
+                                </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </TabsContent>
+                    <TabsContent value="multiple" className="pt-2">
+                         <FormField
+                            control={form.control}
+                            name="amount"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Total Amount</FormLabel>
+                                <FormControl>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+                                    {currencySymbol}
+                                    </span>
+                                    <Input type="number" placeholder="0.00" className="pl-8 font-bold" value={field.value ? field.value.toFixed(2) : "0.00"} disabled />
+                                </div>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
 
-                <FormField
-                    control={form.control}
-                    name="date"
-                    render={({ field }) => (
-                    <FormItem className="flex flex-col">
-                        <FormLabel>Date of Expense</FormLabel>
-                        <Popover>
-                        <PopoverTrigger asChild>
-                            <FormControl>
-                            <Button
-                                variant={"outline"}
-                                className={cn(
-                                "pl-3 text-left font-normal",
-                                !field.value && "text-muted-foreground"
-                                )}
-                            >
-                                {field.value ? (
-                                format(field.value, "PPP")
-                                ) : (
-                                <span>Pick a date</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                            </Button>
-                            </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                            mode="single"
-                            selected={field.value}
-                            onSelect={field.onChange}
-                            initialFocus
-                            />
-                        </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                </div>
+                        <div className="space-y-2 pt-4">
+                            <FormLabel>Items</FormLabel>
+                            <div className="p-2 border rounded-md">
+                                <ScrollArea className="h-32">
+                                    <div className="space-y-2 p-2">
+                                        {items.length === 0 && <p className="text-sm text-center text-muted-foreground py-4">No items added yet.</p>}
+                                        {items.map((item) => (
+                                            <div key={item.id} className="flex items-center justify-between text-sm bg-secondary p-2 rounded-md">
+                                                <span>{item.name}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span>{currencySymbol}{item.cost.toFixed(2)}</span>
+                                                    <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleRemoveItem(item.id)}>
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </ScrollArea>
+                                <div className="flex gap-2 p-2 border-t"
+                                     onKeyDown={(e) => {
+                                        if(e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddItem();
+                                        }
+                                     }}
+                                >
+                                    <Input placeholder="Item name" value={newItemName} onChange={(e) => setNewItemName(e.target.value)} className="h-9" />
+                                    <div className="relative w-32">
+                                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                                            {currencySymbol}
+                                        </span>
+                                        <Input type="number" placeholder="Cost" value={newItemCost} onChange={(e) => setNewItemCost(e.target.value)} className="h-9 pl-5" />
+                                    </div>
+                                    <Button type="button" size="icon" className="h-9 w-9 shrink-0" onClick={handleAddItem}><Plus className="h-4 w-4" /></Button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </TabsContent>
+                </Tabs>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="date"
+                        render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                            <FormLabel>Date of Expense</FormLabel>
+                            <Popover>
+                            <PopoverTrigger asChild>
+                                <FormControl>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                    "pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                    )}
+                                >
+                                    {field.value ? (
+                                    format(field.value, "PPP")
+                                    ) : (
+                                    <span>Pick a date</span>
+                                    )}
+                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                                </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                            </Popover>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
                     <FormField
                     control={form.control}
                     name="category"
@@ -593,6 +703,10 @@ export default function ExpenseForm({
                         </FormItem>
                     )}
                     />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
                     <FormField
                     control={form.control}
                     name="status"
