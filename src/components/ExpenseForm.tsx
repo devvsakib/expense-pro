@@ -778,7 +778,7 @@ export default function ExpenseForm({
             </Form>
         </div>
         
-        <DialogFooter className="p-6 pt-4 border-t">
+        <DialogFooter className="p-6 pt-4 border-t gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>

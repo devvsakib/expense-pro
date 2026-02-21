@@ -1,0 +1,1132 @@
+<boltArtifact id="ilm-connect-platform" title="Ilm Connect - Islamic Knowledge Platform">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ilm Connect - Islamic Knowledge Platform</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+      color: #e8eaed;
+      min-height: 100vh;
+    }
+    
+    .arabic-font {
+      font-family: 'Amiri', serif;
+    }
+    
+    .glass-effect {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .gradient-text {
+      background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(16, 185, 129, 0.2);
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .animate-fade-in-up {
+      animation: fadeInUp 0.6s ease-out forwards;
+    }
+    
+    .stagger-1 { animation-delay: 0.1s; opacity: 0; }
+    .stagger-2 { animation-delay: 0.2s; opacity: 0; }
+    .stagger-3 { animation-delay: 0.3s; opacity: 0; }
+    .stagger-4 { animation-delay: 0.4s; opacity: 0; }
+    
+    .islamic-pattern {
+      background-image: 
+        radial-gradient(circle at 20% 50%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(52, 211, 153, 0.05) 0%, transparent 50%);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-pending {
+      background: rgba(251, 191, 36, 0.1);
+      color: #fbbf24;
+      border: 1px solid rgba(251, 191, 36, 0.3);
+    }
+    
+    .status-approved {
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-rejected {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    input, textarea, select {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #e8eaed;
+      transition: all 0.3s ease;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #10b981;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+    
+    input::placeholder, textarea::placeholder {
+      color: rgba(232, 234, 237, 0.4);
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+      display: inline-block;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    // SVG Icons
+    const Icon = ({ d, ...props }) => (
+      <svg className="icon" viewBox="0 0 24 24" {...props}>
+        {d.map((path, i) => <path key={i} d={path} />)}
+      </svg>
+    );
+
+    const CalendarIcon = (props) => <Icon d={["M3 4h18v18H3z", "M16 2v4M8 2v4", "M3 10h18"]} {...props} />;
+    const MapPinIcon = (props) => <Icon d={["M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z", "M12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"]} {...props} />;
+    const ClockIcon = (props) => <Icon d={["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z", "M12 6v6l4 2"]} {...props} />;
+    const UserIcon = (props) => <Icon d={["M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2", "M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"]} {...props} />;
+    const BookIcon = (props) => <Icon d={["M4 19.5A2.5 2.5 0 0 1 6.5 17H20", "M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"]} {...props} />;
+    const PlusIcon = (props) => <Icon d={["M12 5v14", "M5 12h14"]} {...props} />;
+    const CheckCircleIcon = (props) => <Icon d={["M22 11.08V12a10 10 0 1 1-5.93-9.14", "M22 4L12 14.01l-3-3"]} {...props} />;
+    const XCircleIcon = (props) => <Icon d={["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z", "M15 9l-6 6M9 9l6 6"]} {...props} />;
+    const AlertCircleIcon = (props) => <Icon d={["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z", "M12 8v4", "M12 16h.01"]} {...props} />;
+    const SearchIcon = (props) => <Icon d={["M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z", "M21 21l-4.35-4.35"]} {...props} />;
+    const MenuIcon = (props) => <Icon d={["M3 12h18M3 6h18M3 18h18"]} {...props} />;
+    const XIcon = (props) => <Icon d={["M18 6L6 18M6 6l12 12"]} {...props} />;
+    const HomeIcon = (props) => <Icon d={["M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z", "M9 22V12h6v10"]} {...props} />;
+    const UsersIcon = (props) => <Icon d={["M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2", "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"]} {...props} />;
+    const SettingsIcon = (props) => <Icon d={["M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z", "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"]} {...props} />;
+    const UserCheckIcon = (props) => <Icon d={["M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2", "M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z", "M17 11l2 2 4-4"]} {...props} />;
+
+    // Mock Data
+    const initialScholars = [
+      {
+        id: 1,
+        name: "Sheikh Abdul Aziz",
+        nameArabic: "الشيخ عبد العزيز",
+        specialization: "Aqeedah & Hadith",
+        bio: "Graduate of Madinah University, specialized in Salafi Aqeedah",
+        image: "https://images.unsplash.com/photo-1542909168-82c3e7fdca44?w=400&h=400&fit=crop",
+        status: "approved",
+        location: "Dhaka",
+        contact: "sheikh.aziz@example.com"
+      },
+      {
+        id: 2,
+        name: "Sheikh Muhammad Rahman",
+        nameArabic: "الشيخ محمد الرحمن",
+        specialization: "Fiqh & Tafsir",
+        bio: "Scholar of Ahlul Hadith methodology, teaches at Islamic Center",
+        image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
+        status: "approved",
+        location: "Chittagong",
+        contact: "m.rahman@example.com"
+      },
+      {
+        id: 3,
+        name: "Sheikh Omar Farooq",
+        nameArabic: "الشيخ عمر الفاروق",
+        specialization: "Hadith & Seerah",
+        bio: "Studied under prominent scholars in Saudi Arabia",
+        image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop",
+        status: "pending",
+        location: "Sylhet",
+        contact: "o.farooq@example.com"
+      }
+    ];
+
+    const initialEvents = [
+      {
+        id: 1,
+        title: "Jummah Khutbah: Importance of Tawheed",
+        titleArabic: "خطبة الجمعة: أهمية التوحيد",
+        scholarId: 1,
+        mosque: "Baitul Mukarram National Mosque",
+        location: "Dhaka, Bangladesh",
+        date: "2026-02-21",
+        time: "13:00",
+        topic: "Tawheed & Shirk",
+        language: "Bangla & Arabic",
+        description: "Comprehensive lecture on the fundamentals of Tawheed",
+        recurring: "weekly"
+      },
+      {
+        id: 2,
+        title: "Tafsir Session: Surah Al-Fatiha",
+        titleArabic: "تفسير سورة الفاتحة",
+        scholarId: 2,
+        mosque: "Anderkilla Jame Masjid",
+        location: "Chittagong, Bangladesh",
+        date: "2026-02-18",
+        time: "16:30",
+        topic: "Tafsir",
+        language: "Bangla",
+        description: "Detailed explanation of Surah Al-Fatiha with authentic narrations",
+        recurring: "monthly"
+      },
+      {
+        id: 3,
+        title: "Hadith Study Circle",
+        titleArabic: "دراسة الحديث",
+        scholarId: 1,
+        mosque: "Baitul Mukarram National Mosque",
+        location: "Dhaka, Bangladesh",
+        date: "2026-02-19",
+        time: "18:00",
+        topic: "Hadith Studies",
+        language: "English & Bangla",
+        description: "Weekly hadith study focusing on Sahih Bukhari",
+        recurring: "weekly"
+      }
+    ];
+
+    function App() {
+      const [currentPage, setCurrentPage] = useState('home');
+      const [scholars, setScholars] = useState(initialScholars);
+      const [events, setEvents] = useState(initialEvents);
+      const [isAdmin, setIsAdmin] = useState(false);
+      const [searchQuery, setSearchQuery] = useState('');
+      const [filterLocation, setFilterLocation] = useState('all');
+      const [filterStatus, setFilterStatus] = useState('all');
+      const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+      const getScholarById = (id) => scholars.find(s => s.id === id);
+      
+      const filteredScholars = scholars.filter(scholar => {
+        const matchesSearch = scholar.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            scholar.specialization.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesLocation = filterLocation === 'all' || scholar.location === filterLocation;
+        const matchesStatus = filterStatus === 'all' || scholar.status === filterStatus;
+        return matchesSearch && matchesLocation && matchesStatus;
+      });
+
+      const filteredEvents = events.filter(event => {
+        const scholar = getScholarById(event.scholarId);
+        if (!scholar || (scholar.status !== 'approved' && !isAdmin)) return false;
+        
+        const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            event.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            scholar.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesLocation = filterLocation === 'all' || event.location.includes(filterLocation);
+        return matchesSearch && matchesLocation;
+      });
+
+      const upcomingEvents = filteredEvents
+        .filter(event => new Date(event.date) >= new Date())
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const approveScholar = (id) => {
+        setScholars(scholars.map(s => s.id === id ? {...s, status: 'approved'} : s));
+      };
+
+      const rejectScholar = (id) => {
+        setScholars(scholars.map(s => s.id === id ? {...s, status: 'rejected'} : s));
+      };
+
+      const addNewScholar = (scholarData) => {
+        const newScholar = {
+          ...scholarData,
+          id: scholars.length + 1,
+          status: 'pending',
+          image: "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=400&h=400&fit=crop"
+        };
+        setScholars([...scholars, newScholar]);
+      };
+
+      const addNewEvent = (eventData) => {
+        const newEvent = {
+          ...eventData,
+          id: events.length + 1
+        };
+        setEvents([...events, newEvent]);
+      };
+
+      return (
+        <div className="min-h-screen islamic-pattern">
+          <Navigation 
+            currentPage={currentPage} 
+            setCurrentPage={setCurrentPage}
+            isAdmin={isAdmin}
+            setIsAdmin={setIsAdmin}
+            mobileMenuOpen={mobileMenuOpen}
+            setMobileMenuOpen={setMobileMenuOpen}
+          />
+          
+          <main className="container mx-auto px-4 py-8 max-w-7xl">
+            {currentPage === 'home' && (
+              <HomePage 
+                events={upcomingEvents}
+                scholars={scholars.filter(s => s.status === 'approved')}
+                setCurrentPage={setCurrentPage}
+                getScholarById={getScholarById}
+              />
+            )}
+            
+            {currentPage === 'events' && (
+              <EventsPage 
+                events={upcomingEvents}
+                getScholarById={getScholarById}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                filterLocation={filterLocation}
+                setFilterLocation={setFilterLocation}
+                isAdmin={isAdmin}
+                addNewEvent={addNewEvent}
+              />
+            )}
+            
+            {currentPage === 'scholars' && (
+              <ScholarsPage 
+                scholars={filteredScholars}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                filterLocation={filterLocation}
+                setFilterLocation={setFilterLocation}
+                filterStatus={filterStatus}
+                setFilterStatus={setFilterStatus}
+                isAdmin={isAdmin}
+                addNewScholar={addNewScholar}
+              />
+            )}
+            
+            {currentPage === 'admin' && isAdmin && (
+              <AdminPage 
+                scholars={scholars}
+                events={events}
+                approveScholar={approveScholar}
+                rejectScholar={rejectScholar}
+                getScholarById={getScholarById}
+              />
+            )}
+          </main>
+          
+          <Footer />
+        </div>
+      );
+    }
+
+    function Navigation({ currentPage, setCurrentPage, isAdmin, setIsAdmin, mobileMenuOpen, setMobileMenuOpen }) {
+      const navItems = [
+        { id: 'home', label: 'Home', icon: HomeIcon },
+        { id: 'events', label: 'Events', icon: CalendarIcon },
+        { id: 'scholars', label: 'Scholars', icon: UsersIcon },
+      ];
+
+      if (isAdmin) {
+        navItems.push({ id: 'admin', label: 'Admin', icon: SettingsIcon });
+      }
+
+      return (
+        <nav className="glass-effect sticky top-0 z-50 border-b border-emerald-500/20">
+          <div className="container mx-auto px-4 max-w-7xl">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                  <BookIcon style={{width: '24px', height: '24px', stroke: 'white'}} />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold gradient-text">Ilm Connect</h1>
+                  <p className="text-xs text-emerald-400/70 arabic-font">منصة العلم</p>
+                </div>
+              </div>
+
+              <div className="hidden md:flex items-center space-x-1">
+                {navItems.map(item => {
+                  const IconComponent = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setCurrentPage(item.id)}
+                      className={`px-4 py-2 rounded-lg transition-all flex items-center space-x-2 ${
+                        currentPage === item.id 
+                          ? 'bg-emerald-500/20 text-emerald-400' 
+                          : 'text-gray-300 hover:bg-white/5'
+                      }`}
+                    >
+                      <IconComponent style={{width: '16px', height: '16px'}} />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setIsAdmin(!isAdmin)}
+                  className={`ml-4 px-4 py-2 rounded-lg transition-all flex items-center space-x-2 ${
+                    isAdmin ? 'bg-emerald-500 text-white' : 'bg-white/5 text-gray-300 hover:bg-white/10'
+                  }`}
+                >
+                  <UserCheckIcon style={{width: '16px', height: '16px'}} />
+                  <span>{isAdmin ? 'Admin Mode' : 'User Mode'}</span>
+                </button>
+              </div>
+
+              <button 
+                className="md:hidden p-2 rounded-lg hover:bg-white/5"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              >
+                {mobileMenuOpen ? <XIcon /> : <MenuIcon />}
+              </button>
+            </div>
+
+            {mobileMenuOpen && (
+              <div className="md:hidden py-4 space-y-2">
+                {navItems.map(item => {
+                  const IconComponent = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setCurrentPage(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`w-full px-4 py-3 rounded-lg transition-all flex items-center space-x-3 ${
+                        currentPage === item.id 
+                          ? 'bg-emerald-500/20 text-emerald-400' 
+                          : 'text-gray-300 hover:bg-white/5'
+                      }`}
+                    >
+                      <IconComponent />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => {
+                    setIsAdmin(!isAdmin);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`w-full px-4 py-3 rounded-lg transition-all flex items-center space-x-3 ${
+                    isAdmin ? 'bg-emerald-500 text-white' : 'bg-white/5 text-gray-300'
+                  }`}
+                >
+                  <UserCheckIcon />
+                  <span>{isAdmin ? 'Admin Mode' : 'User Mode'}</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </nav>
+      );
+    }
+
+    function HomePage({ events, scholars, setCurrentPage, getScholarById }) {
+      return (
+        <div className="space-y-12">
+          <section className="text-center py-16 animate-fade-in-up">
+            <h2 className="text-5xl md:text-6xl font-bold mb-4 gradient-text">
+              Connect with Authentic Knowledge
+            </h2>
+            <p className="text-xl text-gray-300 mb-2 arabic-font">
+              اطلبوا العلم من المهد إلى اللحد
+            </p>
+            <p className="text-lg text-gray-400 mb-8">
+              "Seek knowledge from the cradle to the grave"
+            </p>
+            <div className="flex flex-wrap gap-4 justify-center">
+              <button 
+                onClick={() => setCurrentPage('events')}
+                className="btn-primary px-8 py-3 rounded-lg font-semibold text-white flex items-center space-x-2"
+              >
+                <CalendarIcon />
+                <span>Browse Events</span>
+              </button>
+              <button 
+                onClick={() => setCurrentPage('scholars')}
+                className="glass-effect px-8 py-3 rounded-lg font-semibold text-white hover:bg-white/10 transition-all flex items-center space-x-2"
+              >
+                <UsersIcon />
+                <span>View Scholars</span>
+              </button>
+            </div>
+          </section>
+
+          <section className="animate-fade-in-up stagger-1">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-3xl font-bold">Upcoming Events</h3>
+              <button 
+                onClick={() => setCurrentPage('events')}
+                className="text-emerald-400 hover:text-emerald-300 flex items-center space-x-2"
+              >
+                <span>View All</span>
+                <span>→</span>
+              </button>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {events.slice(0, 3).map(event => (
+                <EventCard key={event.id} event={event} scholar={getScholarById(event.scholarId)} />
+              ))}
+            </div>
+          </section>
+
+          <section className="animate-fade-in-up stagger-2">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-3xl font-bold">Featured Scholars</h3>
+              <button 
+                onClick={() => setCurrentPage('scholars')}
+                className="text-emerald-400 hover:text-emerald-300 flex items-center space-x-2"
+              >
+                <span>View All</span>
+                <span>→</span>
+              </button>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              {scholars.slice(0, 3).map(scholar => (
+                <ScholarCard key={scholar.id} scholar={scholar} compact={true} />
+              ))}
+            </div>
+          </section>
+
+          <section className="glass-effect rounded-2xl p-8 animate-fade-in-up stagger-3">
+            <div className="grid md:grid-cols-3 gap-8 text-center">
+              <div>
+                <div className="text-4xl font-bold gradient-text mb-2">{scholars.length}</div>
+                <div className="text-gray-400">Verified Scholars</div>
+              </div>
+              <div>
+                <div className="text-4xl font-bold gradient-text mb-2">{events.length}</div>
+                <div className="text-gray-400">Upcoming Events</div>
+              </div>
+              <div>
+                <div className="text-4xl font-bold gradient-text mb-2">100+</div>
+                <div className="text-gray-400">Students Connected</div>
+              </div>
+            </div>
+          </section>
+        </div>
+      );
+    }
+
+    function EventsPage({ events, getScholarById, searchQuery, setSearchQuery, filterLocation, setFilterLocation, isAdmin, addNewEvent }) {
+      const [showAddForm, setShowAddForm] = useState(false);
+      const [groupBy, setGroupBy] = useState('date');
+      const locations = [...new Set(events.map(e => e.location.split(',')[0]))];
+
+      const groupedEvents = () => {
+        if (groupBy === 'date') {
+          return events.reduce((acc, event) => {
+            const date = new Date(event.date).toLocaleDateString('en-US', { 
+              weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+            if (!acc[date]) acc[date] = [];
+            acc[date].push(event);
+            return acc;
+          }, {});
+        } else if (groupBy === 'scholar') {
+          return events.reduce((acc, event) => {
+            const scholar = getScholarById(event.scholarId);
+            const name = scholar ? scholar.name : 'Unknown';
+            if (!acc[name]) acc[name] = [];
+            acc[name].push(event);
+            return acc;
+          }, {});
+        } else {
+          return events.reduce((acc, event) => {
+            const loc = event.location.split(',')[0];
+            if (!acc[loc]) acc[loc] = [];
+            acc[loc].push(event);
+            return acc;
+          }, {});
+        }
+      };
+
+      return (
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 className="text-4xl font-bold">Events & Lectures</h2>
+            {isAdmin && (
+              <button 
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="btn-primary px-6 py-3 rounded-lg font-semibold text-white flex items-center space-x-2"
+              >
+                <PlusIcon />
+                <span>Add Event</span>
+              </button>
+            )}
+          </div>
+
+          {showAddForm && <AddEventForm onSubmit={addNewEvent} onCancel={() => setShowAddForm(false)} />}
+
+          <div className="glass-effect rounded-xl p-6 space-y-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="relative">
+                <SearchIcon style={{position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '20px', height: '20px', color: '#9ca3af'}} />
+                <input
+                  type="text"
+                  placeholder="Search events..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg"
+                />
+              </div>
+              <select
+                value={filterLocation}
+                onChange={(e) => setFilterLocation(e.target.value)}
+                className="px-4 py-3 rounded-lg"
+              >
+                <option value="all">All Locations</option>
+                {locations.map(loc => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
+              </select>
+              <select
+                value={groupBy}
+                onChange={(e) => setGroupBy(e.target.value)}
+                className="px-4 py-3 rounded-lg"
+              >
+                <option value="date">Group by Date</option>
+                <option value="scholar">Group by Scholar</option>
+                <option value="location">Group by Location</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            {Object.entries(groupedEvents()).map(([group, groupEvents]) => (
+              <div key={group} className="space-y-4">
+                <h3 className="text-2xl font-semibold text-emerald-400 flex items-center space-x-2">
+                  {groupBy === 'date' && <CalendarIcon />}
+                  {groupBy === 'scholar' && <UserIcon />}
+                  {groupBy === 'location' && <MapPinIcon />}
+                  <span>{group}</span>
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {groupEvents.map(event => (
+                    <EventCard key={event.id} event={event} scholar={getScholarById(event.scholarId)} detailed={true} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {events.length === 0 && (
+            <div className="glass-effect rounded-xl p-12 text-center">
+              <CalendarIcon style={{width: '64px', height: '64px', margin: '0 auto 16px', color: '#6b7280'}} />
+              <h3 className="text-xl font-semibold mb-2">No Events Found</h3>
+              <p className="text-gray-400">Try adjusting your filters or check back later.</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ScholarsPage({ scholars, searchQuery, setSearchQuery, filterLocation, setFilterLocation, filterStatus, setFilterStatus, isAdmin, addNewScholar }) {
+      const [showAddForm, setShowAddForm] = useState(false);
+      const locations = [...new Set(scholars.map(s => s.location))];
+
+      return (
+        <div className="space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <h2 className="text-4xl font-bold">Scholars Directory</h2>
+            <button 
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="btn-primary px-6 py-3 rounded-lg font-semibold text-white flex items-center space-x-2"
+            >
+              <PlusIcon />
+              <span>Suggest Scholar</span>
+            </button>
+          </div>
+
+          {showAddForm && <AddScholarForm onSubmit={addNewScholar} onCancel={() => setShowAddForm(false)} />}
+
+          <div className="glass-effect rounded-xl p-6 space-y-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="relative">
+                <SearchIcon style={{position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', width: '20px', height: '20px', color: '#9ca3af'}} />
+                <input
+                  type="text"
+                  placeholder="Search scholars..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg"
+                />
+              </div>
+              <select
+                value={filterLocation}
+                onChange={(e) => setFilterLocation(e.target.value)}
+                className="px-4 py-3 rounded-lg"
+              >
+                <option value="all">All Locations</option>
+                {locations.map(loc => (
+                  <option key={loc} value={loc}>{loc}</option>
+                ))}
+              </select>
+              {isAdmin && (
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-4 py-3 rounded-lg"
+                >
+                  <option value="all">All Status</option>
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              )}
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {scholars.map(scholar => (
+              (scholar.status === 'approved' || isAdmin) && (
+                <ScholarCard key={scholar.id} scholar={scholar} showStatus={isAdmin} />
+              )
+            ))}
+          </div>
+
+          {scholars.length === 0 && (
+            <div className="glass-effect rounded-xl p-12 text-center">
+              <UsersIcon style={{width: '64px', height: '64px', margin: '0 auto 16px', color: '#6b7280'}} />
+              <h3 className="text-xl font-semibold mb-2">No Scholars Found</h3>
+              <p className="text-gray-400">Try adjusting your filters or add a new scholar.</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function AdminPage({ scholars, events, approveScholar, rejectScholar, getScholarById }) {
+      const pendingScholars = scholars.filter(s => s.status === 'pending');
+      const approvedScholars = scholars.filter(s => s.status === 'approved');
+      const rejectedScholars = scholars.filter(s => s.status === 'rejected');
+
+      return (
+        <div className="space-y-8">
+          <h2 className="text-4xl font-bold">Admin Dashboard</h2>
+
+          <div className="grid md:grid-cols-4 gap-6">
+            <div className="glass-effect rounded-xl p-6">
+              <div className="text-3xl font-bold gradient-text mb-2">{pendingScholars.length}</div>
+              <div className="text-gray-400">Pending Approval</div>
+            </div>
+            <div className="glass-effect rounded-xl p-6">
+              <div className="text-3xl font-bold text-emerald-400 mb-2">{approvedScholars.length}</div>
+              <div className="text-gray-400">Approved Scholars</div>
+            </div>
+            <div className="glass-effect rounded-xl p-6">
+              <div className="text-3xl font-bold text-red-400 mb-2">{rejectedScholars.length}</div>
+              <div className="text-gray-400">Rejected</div>
+            </div>
+            <div className="glass-effect rounded-xl p-6">
+              <div className="text-3xl font-bold text-blue-400 mb-2">{events.length}</div>
+              <div className="text-gray-400">Total Events</div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-2xl font-semibold flex items-center space-x-2">
+              <AlertCircleIcon style={{color: '#fbbf24'}} />
+              <span>Pending Approvals</span>
+            </h3>
+            {pendingScholars.length === 0 ? (
+              <div className="glass-effect rounded-xl p-8 text-center">
+                <CheckCircleIcon style={{width: '48px', height: '48px', margin: '0 auto 12px', color: '#10b981'}} />
+                <p className="text-gray-400">No pending approvals</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingScholars.map(scholar => (
+                  <div key={scholar.id} className="glass-effect rounded-xl p-6 card-hover">
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <img src={scholar.image} alt={scholar.name} className="w-24 h-24 rounded-lg object-cover" />
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="text-xl font-semibold">{scholar.name}</h4>
+                            <p className="text-emerald-400 arabic-font">{scholar.nameArabic}</p>
+                          </div>
+                          <span className="status-pending px-3 py-1 rounded-full text-sm font-medium">
+                            Pending
+                          </span>
+                        </div>
+                        <p className="text-gray-400 mb-2">{scholar.specialization}</p>
+                        <p className="text-gray-300 mb-3">{scholar.bio}</p>
+                        <div className="flex items-center space-x-2 text-sm text-gray-400 mb-4">
+                          <MapPinIcon style={{width: '16px', height: '16px'}} />
+                          <span>{scholar.location}</span>
+                        </div>
+                        <div className="flex gap-3">
+                          <button 
+                            onClick={() => approveScholar(scholar.id)}
+                            className="flex-1 bg-emerald-500 hover:bg-emerald-600 px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center space-x-2"
+                          >
+                            <CheckCircleIcon style={{width: '16px', height: '16px'}} />
+                            <span>Approve</span>
+                          </button>
+                          <button 
+                            onClick={() => rejectScholar(scholar.id)}
+                            className="flex-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 px-4 py-2 rounded-lg font-medium transition-all flex items-center justify-center space-x-2"
+                          >
+                            <XCircleIcon style={{width: '16px', height: '16px'}} />
+                            <span>Reject</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-2xl font-semibold">Recent Events</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              {events.slice(0, 4).map(event => (
+                <EventCard key={event.id} event={event} scholar={getScholarById(event.scholarId)} />
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function EventCard({ event, scholar, detailed = false }) {
+      const eventDate = new Date(event.date);
+      const dayName = eventDate.toLocaleDateString('en-US', { weekday: 'short' });
+      const day = eventDate.getDate();
+      const month = eventDate.toLocaleDateString('en-US', { month: 'short' });
+
+      return (
+        <div className="glass-effect rounded-xl overflow-hidden card-hover">
+          <div className="p-6">
+            <div className="flex gap-4 mb-4">
+              <div className="flex-shrink-0 w-16 text-center">
+                <div className="bg-emerald-500/20 rounded-lg p-2 border border-emerald-500/30">
+                  <div className="text-xs text-emerald-400 font-semibold">{dayName}</div>
+                  <div className="text-2xl font-bold text-emerald-400">{day}</div>
+                  <div className="text-xs text-emerald-400">{month}</div>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-xl font-semibold mb-1 line-clamp-2">{event.title}</h3>
+                <p className="text-emerald-400 text-sm arabic-font mb-2">{event.titleArabic}</p>
+                {scholar && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-400 mb-2">
+                    <UserIcon style={{width: '16px', height: '16px'}} />
+                    <span className="truncate">{scholar.name}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex items-start space-x-2 text-gray-300">
+                <MapPinIcon style={{width: '16px', height: '16px', marginTop: '2px', color: '#10b981'}} />
+                <span className="line-clamp-2">{event.mosque}, {event.location}</span>
+              </div>
+              <div className="flex items-center space-x-2 text-gray-300">
+                <ClockIcon style={{width: '16px', height: '16px', color: '#10b981'}} />
+                <span>{event.time} • {event.language}</span>
+              </div>
+              <div className="flex items-center space-x-2 text-gray-300">
+                <BookIcon style={{width: '16px', height: '16px', color: '#10b981'}} />
+                <span>{event.topic}</span>
+              </div>
+            </div>
+
+            {detailed && (
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <p className="text-gray-400 text-sm line-clamp-2">{event.description}</p>
+              </div>
+            )}
+
+            {event.recurring && (
+              <div className="mt-4">
+                <span className="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-medium border border-blue-500/30">
+                  Recurring {event.recurring}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function ScholarCard({ scholar, showStatus = false, compact = false }) {
+      return (
+        <div className="glass-effect rounded-xl overflow-hidden card-hover">
+          <div className="p-6">
+            <div className="flex items-start gap-4 mb-4">
+              <img 
+                src={scholar.image} 
+                alt={scholar.name} 
+                className="w-20 h-20 rounded-lg object-cover"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <h3 className="text-xl font-semibold line-clamp-1">{scholar.name}</h3>
+                  {showStatus && (
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap status-${scholar.status}`}>
+                      {scholar.status}
+                    </span>
+                  )}
+                </div>
+                <p className="text-emerald-400 text-sm arabic-font mb-2">{scholar.nameArabic}</p>
+                <p className="text-gray-400 text-sm">{scholar.specialization}</p>
+              </div>
+            </div>
+
+            {!compact && (
+              <>
+                <p className="text-gray-300 text-sm mb-4 line-clamp-3">{scholar.bio}</p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center space-x-2 text-gray-400">
+                    <MapPinIcon style={{width: '16px', height: '16px', color: '#10b981'}} />
+                    <span>{scholar.location}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function AddScholarForm({ onSubmit, onCancel }) {
+      const [formData, setFormData] = useState({
+        name: '', nameArabic: '', specialization: '', bio: '', location: '', contact: ''
+      });
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(formData);
+        onCancel();
+      };
+
+      return (
+        <div className="glass-effect rounded-xl p-6 animate-fade-in-up">
+          <h3 className="text-2xl font-semibold mb-6">Suggest a Scholar</h3>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Scholar Name</label>
+                <input type="text" required value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full px-4 py-3 rounded-lg" placeholder="Sheikh Muhammad" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Name in Arabic</label>
+                <input type="text" required value={formData.nameArabic} onChange={(e) => setFormData({...formData, nameArabic: e.target.value})} className="w-full px-4 py-3 rounded-lg arabic-font" placeholder="الشيخ محمد" />
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Specialization</label>
+                <input type="text" required value={formData.specialization} onChange={(e) => setFormData({...formData, specialization: e.target.value})} className="w-full px-4 py-3 rounded-lg" placeholder="Aqeedah & Fiqh" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Location</label>
+                <input type="text" required value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} className="w-full px-4 py-3 rounded-lg" placeholder="Dhaka" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Biography</label>
+              <textarea required value={formData.bio} onChange={(e) => setFormData({...formData, bio: e.target.value})} className="w-full px-4 py-3 rounded-lg" rows="4" placeholder="Brief description of the scholar's credentials and background..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Contact Email</label>
+              <input type="email" required value={formData.contact} onChange={(e) => setFormData({...formData, contact: e.target.value})} className="w-full px-4 py-3 rounded-lg" placeholder="scholar@example.com" />
+            </div>
+            <div className="flex gap-3">
+              <button type="submit" className="flex-1 btn-primary px-6 py-3 rounded-lg font-semibold text-white">Submit for Approval</button>
+              <button type="button" onClick={onCancel} className="flex-1 glass-effect px-6 py-3 rounded-lg font-semibold hover:bg-white/10">Cancel</button>
+            </div>
+            <p className="text-sm text-gray-400 text-center">Your submission will be reviewed by admins before being published.</p>
+          </form>
+        </div>
+      );
+    }
+
+    function AddEventForm({ onSubmit, onCancel }) {
+      const [formData, setFormData] = useState({
+        title: '', titleArabic: '', scholarId: 1, mosque: '', location: '', date: '', time: '', topic: '', language: '', description: '', recurring: 'none'
+      });
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(formData);
+        onCancel();
+      };
+
+      return (
+        <div className="glass-effect rounded-xl p-6 animate-fade-in-up">
+          <h3 className="text-2xl font-semibold mb-6">Add New Event</h3>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Event Title</label>
+                <input type="text" required value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} className="w-full px-4 py-3 rounded-lg" placeholder="Jummah Khutbah" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Title in Arabic</label>
+                <input type="text" required value={formData.titleArabic} onChange={(e) => setFormData({...formData, titleArabic: e.target.value})} className="w-full px-4 py-3 rounded-lg arabic-font" placeholder="خطبة الجمعة" />
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Mosque/Venue</label>
+                <input type="text" required value={formData.mosque} onChange={(e) => setFormData({...formData, mosque: e.target.value})} className="w-full px-4 py-3 rounded-lg" placeholder="Baitul Mukarram" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Location</label>
+                <input type="text" required value={formData.location} onChange={(e) => setFormData({...formData, location: e.target.value})} className="w-full px-4 py-3 rounded-lg" placeholder="Dhaka, Bangladesh" />
+              </div>
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Date</label>
+                <input type="date" required value={formData.date} onChange={(e) => setFormData({...formData, date: e.target.value})} className="w-full px-4 py-3 rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Time</label>
+                <input type="time" required value={formData.time} onChange={(e) => setFormData({...formData, time: e.target.value})} className="w-full px-4 py-3 rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Recurring</label>
+                <select value={formData.recurring} onChange={(e) => setFormData({...formData, recurring: e.target.value})} className="w-full px-4 py-3 rounded-lg">
+                  <option value="none">One-time</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Topic</label>
+                <input type="text" required value={formData.topic} onChange={(e) => setFormData({...formData, topic: e.target.value})} className="w-full px-4 py-3 rounded-lg" placeholder="Tawheed & Aqeedah" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Language</label>
+                <input type="text" required value={formData.language} onChange={(e) => setFormData({...formData, language: e.target.value})} className="w-full px-4 py-3 rounded-lg" placeholder="Bangla & Arabic" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">Description</label>
+              <textarea required value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-4 py-3 rounded-lg" rows="4" placeholder="Brief description of the event..." />
+            </div>
+            <div className="flex gap-3">
+              <button type="submit" className="flex-1 btn-primary px-6 py-3 rounded-lg font-semibold text-white">Add Event</button>
+              <button type="button" onClick={onCancel} className="flex-1 glass-effect px-6 py-3 rounded-lg font-semibold hover:bg-white/10">Cancel</button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+
+    function Footer() {
+      return (
+        <footer className="mt-16 glass-effect border-t border-emerald-500/20">
+          <div className="container mx-auto px-4 py-8 max-w-7xl">
+            <div className="grid md:grid-cols-3 gap-8 mb-8">
+              <div>
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                    <BookIcon style={{width: '24px', height: '24px', stroke: 'white'}} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold gradient-text">Ilm Connect</h3>
+                    <p className="text-xs text-emerald-400/70 arabic-font">منصة العلم</p>
+                  </div>
+                </div>
+                <p className="text-gray-400 text-sm">Connecting students of knowledge with authentic Islamic scholars and educational events.</p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-3">Quick Links</h4>
+                <ul className="space-y-2 text-sm text-gray-400">
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">About Us</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Contact</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Privacy Policy</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Terms of Service</a></li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-3">Resources</h4>
+                <ul className="space-y-2 text-sm text-gray-400">
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Islamic Libraries</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Audio Lectures</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Study Materials</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Recommended Books</a></li>
+                </ul>
+              </div>
+            </div>
+            <div className="pt-6 border-t border-white/10 text-center text-sm text-gray-400">
+              <p>© 2026 Ilm Connect. Built for the students of authentic Islamic knowledge.</p>
+              <p className="mt-2 arabic-font text-emerald-400">بارك الله فيكم</p>
+            </div>
+          </div>
+        </footer>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
+</boltArtifact>
